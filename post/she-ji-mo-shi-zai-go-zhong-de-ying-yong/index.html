@@ -1,0 +1,1085 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>设计模式在 Go 中的应用 | 今天学习了没</title>
+<link rel="shortcut icon" href="https://mzhtech.github.io/favicon.ico?v=1727095669873">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://mzhtech.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="设计模式在 Go 中的应用 | 今天学习了没 - Atom Feed" href="https://mzhtech.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="什么是设计模式
+设计模式（design pattern）是对软件设计中普遍存在（反复出现）的各种问题，所提出的解决方案。这个术语是由埃里希·伽玛（Erich Gamma）等人在1990年代从建筑设计领域引入到计算机科学的。
+设计模式并不直接..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://mzhtech.github.io">
+  <img class="avatar" src="https://mzhtech.github.io/images/avatar.png?v=1727095669873" alt="">
+  </a>
+  <h1 class="site-title">
+    今天学习了没
+  </h1>
+  <p class="site-description">
+    希望每天都有收获
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              设计模式在 Go 中的应用
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-09-23
+              </span>
+              <span>
+                63 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>什么是设计模式<br>
+设计模式（design pattern）是对软件设计中普遍存在（反复出现）的各种问题，所提出的解决方案。这个术语是由埃里希·伽玛（Erich Gamma）等人在1990年代从建筑设计领域引入到计算机科学的。</p>
+<p>设计模式并不直接用来完成代码的编写，而是描述在各种不同情况下，要怎么解决问题的一种方案。面向对象设计模式通常以类或对象来描述其中的关系和相互作用，但不涉及用来完成应用程序的特定类或对象。设计模式能使不稳定依赖于相对稳定、具体依赖于相对抽象，避免会引起麻烦的紧耦合，以增强软件设计面对并适应变化的能力。</p>
+<p>并非所有的软件模式都是设计模式，设计模式特指软件“设计”层次上的问题。还有其他非设计模式的模式，如架构模式。同时，算法不能算是一种设计模式，因为算法主要是用来解决计算上的问题，而非设计上的问题。</p>
+<p>设计模式是对软件设计中的常见问题进行总结抽象，并提炼出的通用解决方案（定义），以增强软件设计面对并适应变化的能力（目的）。<br>
+面向对象、设计原则、设计模式<br>
+面向对象编程因为其具有丰富的特性（封装、抽象、继承、多态），可以实现很多复杂的设计思路，是很多设计原则、设计模式编码实现的基础。（用面向过程编程也能实现大多数设计模式，但是基于面向对象编程来实现，会更加容易且直观）</p>
+<p>设计原则是指导我们代码设计的一些经验总结，对于某些场景下，是否应该应用某种设计模式，具有指导意义。比如，“开闭原则”是很多设计模式（策略、模板等）的指导原则。</p>
+<p>设计模式是针对软件开发中经常遇到的一些设计问题，总结出来的一套解决方案或者设计思路。应用设计模式的主要目的是提高代码的可扩展性。从抽象程度上来讲，设计原则比设计模式更抽象。设计模式更加具体、更加可执行。</p>
+<p>暂时无法在飞书文档外展示此内容<br>
+面向对象<br>
+定义<br>
+面向对象编程是一种编程范式或编程风格。它以类或对象作为组织代码的基本单元，并将封装、抽象、继承、多态四个特性，作为代码设计和实现的基石 。</p>
+<p>面向对象编程语言是支持类或对象的语法机制，并有现成的语法机制，能方便地实现面向对象编程四大特性（封装、抽象、继承、多态）的编程语言。</p>
+<p>一般来讲， 面向对象编程都是通过使用面向对象编程语言来进行的（比如 Java），但是，不用面向对象编程语言，我们照样可以进行面向对象编程（比如 linux 内核就大量运用了面向对象编程，但使用的是 C 语言）。反过来讲，即便我们使用面向对象编程语言，写出来的代码也不一定是面向对象编程风格的，也有可能是面向过程编程风格的。</p>
+<p>思考：Go 是面向对象编程语言吗？<br>
+特性<br>
+封装<br>
+封装也叫作信息隐藏或者数据访问保护。类通过暴露有限的访问接口，授权外部仅能通过类提供的方式来访问内部信息或者数据。它需要编程语言提供权限访问控制语法来支持，例如 Java 中的 private、protected、public 关键字。封装特性存在的意义，一方面是保护数据不被随意修改，提高代码的可维护性；另一方面是仅暴露有限的必要接口，提高类的易用性。</p>
+<p>抽象<br>
+封装主要讲如何隐藏信息、保护数据，那抽象就是讲如何隐藏方法的具体实现，让使用者只需要关心方法提供了哪些功能，不需要知道这些功能是如何实现的。抽象可以通过接口类或者抽象类来实现，但也并不需要特殊的语法机制来支持。抽象存在的意义，一方面是提高代码的可扩展性、维护性，修改实现不需要改变定义，减少代码的改动范围；另一方面，它也是处理复杂系统的有效手段，能有效地过滤掉不必要关注的信息。</p>
+<p>继承<br>
+继承是用来表示类之间的 is-a 关系（Apple is a Fruit），分为两种模式：单继承和多继承。单继承表示一个子类只继承一个父类，多继承表示一个子类可以继承多个父类。为了实现继承这个特性，编程语言需要提供特殊的语法机制来支持。继承主要是用来解决代码复用的问题。</p>
+<p>多态<br>
+多态是指子类可以替换父类，在实际的代码运行过程中，调用子类的方法实现。多态这种特性也需要编程语言提供特殊的语法机制来实现，比如继承、接口类、duck-typing（Python、JavaScript 等动态语言支持）。多态可以提高代码的扩展性和复用性，是很多设计模式、设计原则、编程技巧的代码实现基础。</p>
+<p>Java<br>
+// 父类<br>
+public class DynamicArray {<br>
+private static final int DEFAULT_CAPACITY = 10;<br>
+protected int size = 0;<br>
+protected int capacity = DEFAULT_CAPACITY;<br>
+protected Integer[] elements = new Integer[DEFAULT_CAPACITY];</p>
+<p>public int size() { return this.size; }<br>
+public Integer get(int index) { return elements[index];}<br>
+//...省略n多方法...</p>
+<p>public void add(Integer e) {<br>
+ensureCapacity();<br>
+elements[size++] = e;<br>
+}</p>
+<p>protected void ensureCapacity() {<br>
+//...如果数组满了就扩容...代码省略...<br>
+}<br>
+}</p>
+<p>// 子类<br>
+public class SortedDynamicArray extends DynamicArray {<br>
+@Override<br>
+public void add(Integer e) {<br>
+ensureCapacity();<br>
+int i;<br>
+for (i = size-1; i&gt;=0; --i) { //保证数组中的数据有序<br>
+if (elements[i] &gt; e) {<br>
+elements[i+1] = elements[i];<br>
+} else {<br>
+break;<br>
+}<br>
+}<br>
+elements[i+1] = e;<br>
+++size;<br>
+}<br>
+}</p>
+<p>public class Example {<br>
+public static void test(DynamicArray dynamicArray) {<br>
+dynamicArray.add(5);<br>
+dynamicArray.add(1);<br>
+dynamicArray.add(3);<br>
+for (int i = 0; i &lt; dynamicArray.size(); ++i) {<br>
+System.out.println(dynamicArray.get(i));<br>
+}<br>
+}</p>
+<p>public static void main(String args[]) {<br>
+DynamicArray dynamicArray = new SortedDynamicArray();<br>
+// 子类实例传入 test<br>
+test(dynamicArray); // 打印结果：1、3、5<br>
+}<br>
+}</p>
+<p>Python<br>
+class Logger:<br>
+def record(self):<br>
+print(“I write a log into file.”)</p>
+<p>class DB:<br>
+def record(self):<br>
+print(“I insert data into db. ”)</p>
+<p>def test(recorder):<br>
+recorder.record()</p>
+<p>def demo():<br>
+logger = Logger()<br>
+db = DB()<br>
+test(logger)<br>
+test(db)<br>
+面向对象 vs 面向过程</p>
+<ul>
+<li>对于大规模复杂程序的开发，程序的处理流程并非单一的一条主线，而是错综复杂的网状结构。面向对象编程比起面向过程编程，更能应对这种复杂类型的程序开发。</li>
+<li>面向对象编程相比面向过程编程，具有更加丰富的特性（封装、抽象、继承、多态）。利用这些特性编写出来的代码，更加易扩展、易复用、易维护。</li>
+<li>从编程语言跟机器打交道的方式的演进规律中，我们可以总结出：面向对象编程语言比起面向过程编程语言，更加人性化、更加高级、更加智能。<br>
+Go 是面向对象语言吗<br>
+Is Go an object-oriented language?<br>
+Yes and no. Although Go has types and methods and allows an object-oriented style of programming, there is no type hierarchy. The concept of “interface” in Go provides a different approach that we believe is easy to use and in some ways more general. There are also ways to embed types in other types to provide something analogous—but not identical—to subclassing. Moreover, methods in Go are more general than in C++ or Java: they can be defined for any sort of data, even built-in types such as plain, “unboxed” integers. They are not restricted to structs (classes).</li>
+</ul>
+<p>Also, the lack of a type hierarchy makes “objects” in Go feel much more lightweight than in languages such as C++ or Java.</p>
+<p>Go 围绕 struct，提供了私有属性、method、interface、struct 嵌套等能力，可以用更轻量的方式实现面向对象编程（实现封装、抽象、继承和多态）。<br>
+核心理论<br>
+基于接口编程<br>
+“基于接口而非实现编程” - “Program to an interface, not an implementation”。</p>
+<p>“接口”就是一组“协议”或者“约定”，是功能提供者提供给使用者的一个“功能列表”。“接口”在不同的应用场景下会有不同的解读，比如服务端与客户端之间的“接口”，类库提供的“接口”。“基于接口而非实现编程”这条原则中的“接口”，可以理解为编程语言中的接口或者抽象类。</p>
+<p>实际上，“基于接口而非实现编程”这条原则的另一个表述方式，是“基于抽象而非实现编程”。在软件开发中，最大的挑战之一就是需求的不断变化，这也是考验代码设计好坏的一个标准。越抽象、越顶层、越脱离具体某一实现的设计，越能提高代码的灵活性，越能应对未来的需求变化。好的代码设计，不仅能应对当下的需求，而且在将来需求发生变化的时候，仍然能够在不破坏原有代码设计的情况下灵活应对。而抽象就是提高代码扩展性、灵活性、可维护性最有效的手段之一。</p>
+<hr>
+<p>举例：假设我们的系统中有很多涉及图片处理和存储的业务逻辑。图片经过处理之后被上传到阿里云上。为了代码复用，我们封装了图片存储相关的代码逻辑，提供了一个统一的 AliyunImageStore 类，供整个系统来使用。</p>
+<p>package main</p>
+<p>type AliyunImageStore struct {<br>
+// ... 省略属性<br>
+}</p>
+<p>func NewAliyunImageStore( /* 省略参数 */ ) *AliyunImageStore {<br>
+return &amp;AliyunImageStore{}<br>
+}</p>
+<p>func (ais *AliyunImageStore) createBucketIfNotExisting(bucketName string) {<br>
+// ...创建bucket代码逻辑...<br>
+// ...失败会抛出异常..<br>
+}</p>
+<p>func (ais *AliyunImageStore) generateAccessToken() (token string) {<br>
+// ...根据accesskey/secrectkey等生成access token<br>
+return<br>
+}</p>
+<p>func (ais *AliyunImageStore) uploadToAliyun(image []byte, bucketName string, accessToken string) {<br>
+//...上传图片到阿里云...<br>
+//...返回图片存储在阿里云上的地址(url）...<br>
+}</p>
+<p>func (ais *AliyunImageStore) downloadFromAliyun(url string, accessToken string) (image []byte) {<br>
+//...从阿里云下载图片...<br>
+return<br>
+}</p>
+<p>func main() {<br>
+const BucketName = &quot;ai_images_bucket&quot;</p>
+<p>var image = readImage() // 获取图片<br>
+imageStore := NewAliyunImageStore( /* 省略参数 */ )<br>
+imageStore.createBucketIfNotExisting(BucketName)<br>
+accessToken := imageStore.generateAccessToken()<br>
+imageStore.uploadToAliyun(image, BucketName, accessToken)<br>
+}</p>
+<p>func readImage() (image []byte) {<br>
+// ... 省略代码<br>
+return<br>
+}</p>
+<p>过了一段时间后，我们自建了私有云，不再将图片存储到阿里云了，而是将图片存储到自建私有云上。而对于私有云来说，上传流程和阿里云并不一致。为了满足这样一个需求的变化，我们该如何修改代码呢？</p>
+<p>思路：</p>
+<ul>
+<li>函数的命名不能暴露任何实现细节。比如，前面 uploadToAliyun() 就不符合要求，应该改为去掉 aliyun 这样的字眼，改为更加抽象的命名方式，比如：upload()。</li>
+<li>封装具体的实现细节。比如，跟阿里云相关的特殊上传（或下载）流程不应该暴露给调用者。我们对上传（或下载）流程进行封装，对外提供一个包裹所有上传（或下载）细节的方法，给调用者使用。</li>
+<li>为实现类定义抽象的接口。具体的实现类都依赖统一的接口定义，遵从一致的上传功能协议。使用者依赖接口，而不是具体的实现类来编程。</li>
+</ul>
+<p>package main</p>
+<p>import &quot;fmt&quot;</p>
+<p>// 接口定义<br>
+type ImageStore interface {<br>
+upload(image []byte, bucketName string) string<br>
+download(url string) []byte<br>
+}</p>
+<p>// 实现一：阿里云<br>
+type AliyunImageStore struct {<br>
+// ... 省略属性<br>
+}</p>
+<p>func NewAliyunImageStore() *AliyunImageStore {<br>
+return &amp;AliyunImageStore{}<br>
+}</p>
+<p>func (ais *AliyunImageStore) upload(image []byte, bucketName string) (url string) {<br>
+ais.createBucketIfNotExisting(bucketName)<br>
+accessToken := ais.generateAccessToken()<br>
+fmt.Println(accessToken)<br>
+//...上传图片到阿里云...<br>
+// ...返回图片在阿里云上的地址(url)...<br>
+return<br>
+}</p>
+<p>func (ais *AliyunImageStore) download(url string) (image []byte) {<br>
+accessToken := ais.generateAccessToken()<br>
+fmt.Println(accessToken)<br>
+//...从阿里云下载图片...<br>
+return<br>
+}</p>
+<p>func (ais *AliyunImageStore) createBucketIfNotExisting(bucketName string) {<br>
+// ...创建bucket代码逻辑...<br>
+// ...失败会抛出异常..<br>
+}</p>
+<p>func (ais *AliyunImageStore) generateAccessToken() (token string) {<br>
+// ...根据accesskey/secrectkey等生成access token<br>
+return<br>
+}</p>
+<p>// 实现二：私有云</p>
+<p>type PrivateImageStore struct {<br>
+// ... 省略属性<br>
+}</p>
+<p>func NewPrivateImageStore() *PrivateImageStore {<br>
+return &amp;PrivateImageStore{}<br>
+}</p>
+<p>func (pis *PrivateImageStore) upload(image []byte, bucketName string) (url string) {<br>
+//...上传图片到私有云...<br>
+// ...返回图片的url...<br>
+return<br>
+}</p>
+<p>func (pis *PrivateImageStore) download(url string) (image []byte) {<br>
+//...从私有云下载图片...<br>
+return<br>
+}</p>
+<p>func main() {<br>
+const BucketName = &quot;ai_images_bucket&quot;</p>
+<p>var image = readImage()              // 获取图片<br>
+imageStore := NewPrivateImageStore() // imageStore := NewAliyunImageStore()<br>
+imageStore.upload(image, BucketName)<br>
+}</p>
+<p>func readImage() (image []byte) {<br>
+// ... 省略代码<br>
+return<br>
+}</p>
+<p>问题：是否需要为每个类定义接口？</p>
+<p>这条原则的设计初衷是，将接口和实现相分离，封装不稳定的实现，暴露稳定的接口。上游系统面向接口而非实现编程，不依赖不稳定的实现细节，这样当实现发生变化的时候，上游系统的代码基本上不需要做改动，以此来降低代码间的耦合性，提高代码的扩展性。</p>
+<p>从这个设计初衷上来看，如果在我们的业务场景中，某个功能只有一种实现方式，未来也不可能被其他实现方式替换，那我们就没有必要为其设计接口，也没有必要基于接口编程，直接使用实现类就可以了。<br>
+组合 vs 继承<br>
+继承是面向对象的四大特性之一，用来表示类之间的 is-a 关系（Apple is a Fruit），可以解决代码复用的问题。虽然继承有诸多作用，但继承层次过深、过复杂，也会影响到代码的可维护性。</p>
+<p>举例：设计一个关于鸟的类</p>
+<p>继承<br>
+package main</p>
+<p>import &quot;errors&quot;</p>
+<p>var (<br>
+ErrCannotFly = errors.New(&quot;I can't fly.'&quot;)<br>
+)</p>
+<p>// 父类<br>
+type Bird struct{}</p>
+<p>func (b *Bird) fly() (err error) {<br>
+return<br>
+}</p>
+<p>// 子类 1 - 鹦鹉<br>
+type Parrot struct {<br>
+Bird<br>
+}</p>
+<p>// 子类 2 - 鸵鸟<br>
+type Ostrich struct {<br>
+Bird<br>
+}</p>
+<p>func (o *Ostrich) fly() (err error) {<br>
+return ErrCannotFly<br>
+}</p>
+<p>对于上面的代码，如果一种鸟不会飞，就需要重写 fly 方法。一方面会增加代码工作量；一方面也违反了最小知识原则，即暴露不该暴露的接口给外部，增加了类使用过程中被误用的概率。</p>
+<p>你可能会说，那我们再派生两个类：会飞的鸟和不会飞的鸟<br>
+[图片]<br>
+type Bird struct{}</p>
+<p>// 会飞的鸟<br>
+type FlyableBird struct {<br>
+Bird<br>
+}</p>
+<p>func (fb *FlyableBird) fly() (err error) {<br>
+return<br>
+}</p>
+<p>// 不会飞的鸟<br>
+type UnFlyableBird struct {<br>
+Bird<br>
+}</p>
+<p>type Ostrich struct {<br>
+UnFlyableBird<br>
+}</p>
+<p>从图中我们可以看出，继承关系变成了三层。不过，整体上来讲，目前的继承关系还比较简单，层次比较浅，也算是一种可以接受的设计思路。我们再继续加点难度。在刚刚这个场景中，我们只关注“鸟会不会飞”，但如果我们还关注“鸟会不会叫”，那这个时候，我们又该如何设计类之间的继承关系呢？</p>
+<p>[图片]<br>
+如果我们还需要考虑“是否会下蛋”这样一个行为，那估计就要组合爆炸了。</p>
+<p>类的继承层次会越来越深、继承关系会越来越复杂。而这种层次很深、很复杂的继承关系，一方面，会导致代码的可读性变差。因为我们要搞清楚某个类具有哪些方法、属性，必须阅读父类的代码、父类的父类的代码……一直追溯到最顶层父类的代码。另一方面，这也破坏了类的封装特性，将父类的实现细节暴露给了子类。子类的实现依赖父类的实现，两者高度耦合，一旦父类代码修改，就会影响所有子类的逻辑。</p>
+<p>组合<br>
+组合表示类之间 has-a 的关系，比如  House has Bathroom，从例子就可以看出组合和继承的差异。</p>
+<p>接下来我们看一个例子，来加深对组合的理解。前面讲到的接口表示具有某种行为特性。针对“会飞”这样一个行为特性，我们可以定义一个 Flyable 接口，只让会飞的鸟去实现这个接口。</p>
+<p>package main</p>
+<p>type Flyable interface {<br>
+fly()<br>
+}</p>
+<p>type Tweetableyd interface {<br>
+tweet()<br>
+}</p>
+<p>type EggLayable interface {<br>
+layEgg()<br>
+}</p>
+<p>// 接口 TweetEggLayable has Tweetableyd &amp; EggLayable<br>
+type TweetEggLayable interface {<br>
+Tweetableyd<br>
+EggLayable<br>
+}</p>
+<p>type Ostrich struct {}</p>
+<p>func (o *Ostrich) tweet() {}<br>
+func (o *Ostrich) layEgg() {}</p>
+<p>不过，我们知道，接口只声明方法，不定义实现。也就是说，每个会下蛋的鸟都要实现一遍 layEgg() 方法，并且实现逻辑是一样的，这就会导致代码重复的问题。那这个问题又该如何解决呢？</p>
+<p>我们可以针对每个接口再定义各自的实现类：<br>
+type TweetAbility struct{}<br>
+func (f TweetAbility) tweet() {}</p>
+<p>type EggLayAbility struct{}<br>
+func (f EggLayAbility) layEgg() {}</p>
+<p>// 实现类 OstrichV2 has TweetAbility &amp; EggLayAbility，实现了 TweetEggLayable 接口<br>
+type OstrichV2 struct {<br>
+TweetAbility<br>
+EggLayAbility<br>
+}</p>
+<p>func main() {<br>
+o := OstrichV2{} // NewXXX<br>
+o.tweet()<br>
+o.layEgg()<br>
+}</p>
+<p>可以看到，基于 Go 的 interface 及 struct，我们能很轻松得实现组合。Go 语言本身很多地方也使用到了组合，比如 io 包的 ReadWriteCloser、WriteCloser 等。</p>
+<p>// ReadWriter is the interface that groups the basic Read and Write methods.<br>
+type ReadWriter interface {<br>
+Reader<br>
+Writer<br>
+}</p>
+<p>// ReadCloser is the interface that groups the basic Read and Close methods.<br>
+type ReadCloser interface {<br>
+Reader<br>
+Closer<br>
+}</p>
+<p>// WriteCloser is the interface that groups the basic Write and Close methods.<br>
+type WriteCloser interface {<br>
+Writer<br>
+Closer<br>
+}</p>
+<p>// ReadWriteCloser is the interface that groups the basic Read, Write and Close methods.<br>
+type ReadWriteCloser interface {<br>
+Reader<br>
+Writer<br>
+Closer<br>
+}</p>
+<p>问题：如何判断该用组合还是继承？<br>
+尽管我们鼓励多用组合少用继承，但组合也并不是完美的，继承也并非一无是处。从上面的例子来看，继承改写成组合意味着要做更细粒度的类的拆分。这也就意味着，我们要定义更多的类和接口。类和接口的增多也就或多或少地增加代码的复杂程度和维护成本。所以，在实际的项目开发中，我们还是要根据具体的情况，来具体选择该用继承还是组合。</p>
+<p>如果类之间的继承结构稳定（不会轻易改变），继承层次比较浅（比如，最多有两层继承关系），继承关系不复杂，我们就可以大胆地使用继承。反之，系统越不稳定，继承层次很深，继承关系复杂，我们就尽量使用组合来替代继承。</p>
+<p>除此之外，还有一些设计模式会固定使用继承或者组合。比如，装饰者模式（decorator pattern）、策略模式（strategy pattern）、组合模式（composite pattern）等都使用了组合关系，而模板模式（template pattern）使用了继承关系。<br>
+设计原则<br>
+SOLID<br>
+单一职责<br>
+单一职责原则的英文是 Single Responsibility Principle，缩写为 SRP。这个原则的英文描述是这样的：A class or module should have a single responsibility。如果我们把它翻译成中文，那就是：一个类或者模块只负责完成一个职责（或者功能）。</p>
+<p>注意，这个原则描述的对象包含两个，一个是类（class），一个是模块（module）。通常可以把模块看做比类更抽象的概念，比如函数、类、由类组合的功能单元都可以是一个模块。</p>
+<ol>
+<li>
+<p>如何理解单一职责原则（SRP）？<br>
+一个类（或模块）只负责完成一个职责或者功能。不要设计大而全的类，要设计粒度小、功能单一的类。单一职责原则是为了实现代码高内聚、低耦合，提高代码的复用性、可读性、可维护性。</p>
+</li>
+<li>
+<p>如何判断类的职责是否足够单一？<br>
+不同的应用场景、不同阶段的需求背景、不同的业务层面，对同一个类的职责是否单一，可能会有不同的判定结果。实际上，一些侧面的判断指标更具有指导意义和可执行性，比如，出现下面这些情况就有可能说明这类的设计不满足单一职责原则：</p>
+</li>
+</ol>
+<ul>
+<li>类中的代码行数、函数或者属性过多</li>
+<li>类依赖的其他类过多，或者依赖类的其他类过多</li>
+<li>私有方法过多</li>
+<li>比较难给类起一个合适的名字</li>
+<li>类中大量的方法都是集中操作类中的某几个属性</li>
+<li>代码中存在大量注释（来自《重构》一书）</li>
+</ul>
+<ol start="3">
+<li>类的职责是否设计得越单一越好？<br>
+单一职责原则通过避免设计大而全的类，避免将不相关的功能耦合在一起，来提高类的内聚性。同时，类职责单一，类依赖的和被依赖的其他类也会变少，减少了代码的耦合性，以此来实现代码的高内聚、低耦合。但是，如果拆分得过细，实际上会适得其反，反倒会降低内聚性，也会影响代码的可维护性。<br>
+开放封闭<br>
+开闭原则的英文全称是 Open Closed Principle，简写为 OCP。它的英文描述是：software entities (modules, classes, functions, etc.) should be open for extension , but closed for modification。我们把它翻译成中文就是：软件实体（模块、类、方法等）应该“对扩展开放、对修改关闭”。</li>
+</ol>
+<p>开放封闭原则可以说是 SOLID 中最有用的原则。之所以说这条原则最有用，那是因为，扩展性是代码质量最重要的衡量标准之一。在 23 种经典设计模式中，大部分设计模式都是为了解决代码的扩展性问题而存在的，主要遵从的设计原则就是开闭原则。</p>
+<p>举例：比如基于接口编程部分举的 ImageStore 的例子，当我们要引入一种新的云存储时，只需要新增一个实现类（扩展），然后替换调用的实现类即可，业务调用逻辑和原有类并没有发生修改。</p>
+<ol>
+<li>如何理解“对扩展开放、对修改关闭”？<br>
+添加一个新的功能，应该是通过在已有代码基础上扩展代码（新增模块、类、方法、属性等），而非修改已有代码（修改模块、类、方法、属性等）的方式来完成。关于定义，我们有两点要注意。</li>
+</ol>
+<p>第一点是，开闭原则并不是说完全杜绝修改，而是以最小的修改代码的代价来完成新功能的开发。<br>
+第二点是，同样的代码改动，在粗代码粒度下，可能被认定为“修改”；在细代码粒度下，可能又被认定为“扩展”。</p>
+<p>第二点举例：我们对一个类添加新的方法。添加方法相当于修改类，在类这个层面，这个代码改动可以被认定为“修改”；但这个代码改动并没有修改已有的属性和方法，在方法（及其属性）这一层面，它又可以被认定为“扩展”。</p>
+<ol start="2">
+<li>如何做到“对扩展开放、修改关闭”？<br>
+我们要时刻具备扩展意识、抽象意识、封装意识。在写代码的时候，我们要多花点时间思考一下，这段代码未来可能有哪些需求变更，如何设计代码结构，事先留好扩展点，以便在未来需求变更的时候，在不改动代码整体结构、做到最小代码改动的情况下，将新的代码灵活地插入到扩展点上。很多设计原则、设计思想、设计模式，都是以提高代码的扩展性为最终目的的。特别是 23 种经典设计模式，大部分都是为了解决代码的扩展性问题而总结出来的，都是以开闭原则为指导原则的。最常用来提高代码扩展性的方法有：多态、依赖注入、基于接口而非实现编程，以及大部分的设计模式（比如，装饰、策略、模板、职责链、状态）。</li>
+</ol>
+<p>里式替换<br>
+里式替换原则的英文翻译是：Liskov Substitution Principle，缩写为 LSP。这个原则最早是在 1986 年由 Barbara Liskov 提出，他是这么描述这条原则的：</p>
+<p>If S is a subtype of T, then objects of type T may be replaced with objects of type S, without breaking the program。</p>
+<p>在 1996 年，Robert Martin 在他的 SOLID 原则中，重新描述了这个原则，英文原话是这样的：</p>
+<p>Functions that use pointers of references to base classes must be able to use objects of derived classes without knowing it。</p>
+<p>我们综合两者的描述，将这条原则用中文描述出来，是这样的：子类对象（object of subtype/derived class）能够替换程序（program）中父类对象（object of base/parent class）出现的任何地方，并且保证原来程序的逻辑行为（behavior）不变及正确性不被破坏。</p>
+<p>package main</p>
+<p>import &quot;net/http&quot;</p>
+<p>//  class: Request<br>
+type Request struct{}</p>
+<p>func NewRequest() Request {<br>
+return Request{}<br>
+}</p>
+<p>// 网络传输接口<br>
+type ITransporter interface {<br>
+sendRequest(request Request)<br>
+}</p>
+<p>// 父类: Transporter  实现 ITransporter<br>
+type Transporter struct {<br>
+httpClient *http.Client<br>
+}</p>
+<p>func NewTransporter(httpClient *http.Client) *Transporter {<br>
+return &amp;Transporter{httpClient: httpClient}<br>
+}</p>
+<p>func (t *Transporter) sendRequest(request Request) {<br>
+// ...use httpClient to send request<br>
+}</p>
+<p>// 子类: SecurityTransporter 继承 Transporter 实现 ITransporter<br>
+type SecurityTransporter struct {<br>
+Transporter<br>
+appID    string<br>
+appToken string<br>
+}</p>
+<p>func NewSecurityTransporter(httpClient *http.Client, appID, appToken string) *SecurityTransporter {<br>
+return &amp;SecurityTransporter{Transporter{httpClient: httpClient}, appID, appToken}<br>
+}</p>
+<p>func (st *SecurityTransporter) sendRequest(request Request) {<br>
+// ... 重写 sendRequest，加入对 appID, appToken 的处理（鉴权逻辑）<br>
+}</p>
+<p>// 里式替换原则</p>
+<p>func demoFunction(transporter ITransporter) {<br>
+request := NewRequest()<br>
+//...省略设置request中数据值的代码...<br>
+transporter.sendRequest(request)<br>
+}</p>
+<p>func main() {<br>
+httpClient := &amp;http.Client{}</p>
+<p>transporter1 := NewTransporter(httpClient)<br>
+demoFunction(transporter1)</p>
+<p>transporter2 := NewSecurityTransporter(httpClient, &quot;starling&quot;, &quot;test&quot;)<br>
+demoFunction(transporter2)<br>
+}</p>
+<p>在上面的代码中，子类 SecurityTransporter 的设计完全符合里式替换原则，可以替换父类出现的任何位置，并且原来代码的逻辑行为不变且正确性也没有被破坏。</p>
+<p>问题：刚刚的代码设计不就是简单利用了面向对象的多态特性吗？多态和里式替换原则说的是不是一回事呢？</p>
+<p>我们对子类的 sendRequest 做如下更改：<br>
+func (st *SecurityTransporter) sendRequest(request Request) {<br>
+// ... 重写 sendRequest，加入对 appID, appToken 的处理<br>
+if st.appID == &quot;&quot; || st.appToken == &quot;&quot; {<br>
+panic(&quot;invalid params&quot;)<br>
+}<br>
+// ... 后续发送请求逻辑<br>
+}</p>
+<p>在改造之后的代码中，如果传递进 demoFunction() 函数的是父类 Transporter 对象，那 demoFunction() 函数并不会有异常抛出，但如果传递给 demoFunction() 函数的是子类 SecurityTransporter 对象，那 demoFunction() 有可能会有异常抛出。可以说，子类替换父类传递进 demoFunction 函数之后，整个程序的逻辑行为有了改变。从设计思路上来讲，SecurityTransporter 的设计是不符合里式替换原则的。</p>
+<p>多态是面向对象编程的一大特性，也是面向对象编程语言的一种语法。它是一种代码实现的思路。而里式替换是一种设计原则，是用来指导继承关系中子类该如何设计的，子类的设计要保证在替换父类的时候，不改变原有程序的逻辑以及不破坏原有程序的正确性。</p>
+<p>问题：哪些代码明显违背了 LSP？</p>
+<ol>
+<li>
+<p>子类违背父类声明要实现的功能<br>
+父类中提供的 sortOrdersByAmount() 订单排序函数，是按照金额从小到大来给订单排序的，而子类重写这个 sortOrdersByAmount() 订单排序函数之后，是按照创建日期来给订单排序的。那子类的设计就违背里式替换原则。</p>
+</li>
+<li>
+<p>子类违背父类对输入、输出、异常的约定<br>
+在父类中，某个函数约定（假设语言是 Go，函数返回 interface{} 类型）：运行出错的时候返回 nil；获取数据为空的时候返回空集合（empty slice）。而子类重载函数之后，实现变了，运行出错返回错误（error），获取不到数据返回 nil。那子类的设计就违背里式替换原则。</p>
+</li>
+</ol>
+<p>在父类中，某个函数约定，输入数据可以是任意整数，但子类实现的时候，只允许输入数据是正整数，负数就抛出，也就是说，子类对输入的数据的校验比父类更加严格，那子类的设计就违背了里式替换原则。</p>
+<p>在父类中，某个函数约定，只会抛出 ArgumentNullException 异常（错误），那子类的设计实现中只允许抛出 ArgumentNullException 异常（错误），任何其他异常的抛出，都会导致子类违背里式替换原则。</p>
+<ol start="3">
+<li>子类违背父类注释中所罗列的任何特殊说明<br>
+父类中定义的 withdraw() 提现函数的注释是这么写的：“用户的提现金额不得超过账户余额……”，而子类重写 withdraw() 函数之后，针对 VIP 账号实现了透支提现的功能，也就是提现金额可以大于账户余额，那这个子类的设计也是不符合里式替换原则的。</li>
+</ol>
+<p>可以看到，如果违背了 LSP 原则，在用子类替换父类时，无法保证原有代码逻辑能够顺利运行，可能需要做额外的处理和调整。</p>
+<p>接口隔离<br>
+接口隔离原则的英文翻译是“ Interface Segregation Principle”，缩写为 ISP。Robert Martin 在 SOLID 原则中是这样定义它的：“Clients should not be forced to depend upon interfaces that they do not use。”直译成中文的话就是：客户端不应该被强迫依赖它不需要的接口。其中的“客户端”，可以理解为接口的调用者或者使用者。</p>
+<ol>
+<li>如何理解“接口隔离原则”？<br>
+理解“接口隔离原则”的重点是理解其中的“接口”二字。这里有三种不同的理解。</li>
+</ol>
+<p>如果把“接口”理解为一组接口集合，可以是某个微服务的接口，也可以是某个类库的接口等。如果部分接口只被部分调用者使用，我们就需要将这部分接口隔离出来，单独给这部分调用者使用，而不强迫其他调用者也依赖这部分不会被用到的接口。（比如将获取用户敏感数据的相关接口和获取普通信息的接口做隔离）</p>
+<p>如果把“接口”理解为单个 API 接口或函数，部分调用者只需要函数中的部分功能，那我们就需要把函数拆分成粒度更细的多个函数，让调用者只依赖它需要的那个细粒度函数。</p>
+<p>如果把“接口”理解为 OOP 中的接口，也可以理解为面向对象编程语言中的接口语法。那接口的设计要尽量单一，不要让接口的实现类和调用者，依赖不需要的接口函数。Go 语言 io 包中的 Reader、Writer 接口实现，就是“接口隔离原则”的最佳实践。</p>
+<p>type Reader interface {<br>
+Read(p []byte) (n int, err error)<br>
+}</p>
+<p>type Writer interface {<br>
+Write(p []byte) (n int, err error)<br>
+}</p>
+<ol start="2">
+<li>接口隔离原则与单一职责原则的区别<br>
+单一职责原则针对的是模块、类、接口的设计。接口隔离原则相对于单一职责原则，一方面更侧重于接口的设计，另一方面它的思考角度也是不同的。接口隔离原则提供了一种判断接口的职责是否单一的标准：通过调用者如何使用接口来间接地判定。如果调用者只使用部分接口或接口的部分功能，那接口的设计就不够职责单一。<br>
+依赖倒置<br>
+依赖反转原则（Dependency inversion principle，DIP）是指一种特定的解耦（传统的依赖关系建立在高层次上，而具体的策略设置则应用在低层次的模块上）形式，使得高层次的模块不依赖于低层次的模块的实现细节，依赖关系被颠倒（反转），从而使得低层次模块依赖于高层次模块的需求抽象。<br>
+-- from 维基百科</li>
+</ol>
+<p>依赖倒置原则也叫作依赖反转原则。高层模块不依赖低层模块，它们共同依赖同一个抽象。抽象不要依赖具体实现细节，具体实现细节依赖抽象。具体可以参考：https://time.geekbang.org/column/article/177444</p>
+<p>例子 1<br>
+来看一个例子。例子来自《架构整洁之道》，图片取自 架构整洁之道。</p>
+<p>以下是一个组件依赖图，可以看到  Interactors -&gt; Entities -&gt; Authorizer 形成了一个循环依赖：<br>
+暂时无法在飞书文档外展示此内容<br>
+方案一：引入新的组件<br>
+可以简单理解为引入新的包、模块或者类。比如引入新的 Permission 包，让 Entities 和 Authorizer 都依赖 Permission，破除循环依赖。<br>
+暂时无法在飞书文档外展示此内容<br>
+该方案会产生“抖动”，让组件依赖结构不断变化并膨胀。</p>
+<p>方案二：使用 DIP 原则<br>
+让 Entities（高层次）和 Authorizer（低层次）都依赖抽象，这个抽象（比如一个接口类）定义在 Entities 中，依赖关系变成了 Authorizer -&gt; Entities，进而破除了循环依赖。<br>
+暂时无法在飞书文档外展示此内容<br>
+暂时无法在飞书文档外展示此内容</p>
+<p>例子 2<br>
+再来看另一个例子，这个例子也是《架构整洁之道》中的（图片同样来自  架构整洁之道）。首先我们可以先简单了解下 SDP 原则：</p>
+<p>SDP（稳定依赖原则）：依赖关系必须要指向更稳定的方向。<br>
+稳定性指标</p>
+<ul>
+<li>Fan-in：入向依赖，表示组件外部类依赖于组件内部类的数量</li>
+<li>Fan-out：出向依赖，表示组件内部类依赖于组件外部类的数量</li>
+<li>I：不稳定性，I = Fan-out / (Fan-in + Fan-out）<br>
+（小思考：SDP 的意义是什么？）</li>
+</ul>
+<p>下面是一个违背 SDP 原则的例子：<br>
+暂时无法在飞书文档外展示此内容<br>
+暂时无法在飞书文档外展示此内容<br>
+基于 DIP，我们可以新创建一个组件，定义好抽象（接口），然后让 Stable 和 Flexible 都依赖新组件，新组件只有入向依赖，没有出向依赖，非常稳定。新依赖图符合 SDP 原则。<br>
+暂时无法在飞书文档外展示此内容</p>
+<p>引申：控制反转 vs 依赖倒置<br>
+实际上，控制反转是一个比较笼统的设计思想，并不是一种具体的实现方法，一般用来指导框架层面的设计。这里所说的“控制”指的是对程序执行流程的控制，而“反转”指的是在没有使用框架之前，程序员自己控制整个程序的执行。在使用框架之后，整个程序的执行流程通过框架来控制。流程的控制权从程序员“反转”给了框架。<br>
+篇幅有限，具体可以参考：https://time.geekbang.org/column/article/177444、https://zhuanlan.zhihu.com/p/60995312</p>
+<p>简单说，控制反转用于实现松耦合的代码架构。实现控制反转的方式主要有两种，分别是依赖注入和依赖查找。这里主要看看依赖注入。</p>
+<p>依赖注入<br>
+依赖注入和控制反转恰恰相反，它是一种具体的编码技巧。我们不通过 new 的方式在类内部创建依赖类的对象，而是将依赖的类对象在外部创建好之后，通过构造函数、函数参数等方式传递（或注入）给类来使用。依赖注入也是实现组合最简单的方式。<br>
+type A struct {}</p>
+<p>func NewA() A {<br>
+return A{}<br>
+}</p>
+<p>type B struct {<br>
+a A<br>
+}</p>
+<p>func NewB(a A) B {<br>
+return B{a:a}<br>
+}</p>
+<p>func main() {<br>
+a := NewA()<br>
+// 依赖注入<br>
+b := NewB(a)<br>
+}</p>
+<p>通过依赖注入的方式来将依赖的类对象传递进来，这样就提高了代码的扩展性，我们可以灵活地替换依赖的类（此时依赖的是一个接口而非一个具体的类）。<br>
+type ITest interface  {}</p>
+<p>type A struct {} // implement ITest</p>
+<p>type B struct {<br>
+test ITest   // 进一步解耦 B 和 A<br>
+}</p>
+<p>// 传入的 test，可以是 A 的对象，也可以是其他实现了 ITest 的对象<br>
+func NewB(test ITest) B {}</p>
+<p>通常我们可以通过依赖注入框架实现依赖注入。比如通过依赖注入框架提供的扩展点，简单配置一下所有需要的类及其类与类之间依赖关系，就可以实现由框架来自动创建对象、管理对象的生命周期、依赖注入等原本需要程序员来做的事情。用过 Java Spring 的同学应该会比较熟悉。相当于是我们把类的依赖关系的控制权交给了框架来处理。</p>
+<p>KISS<br>
+KISS 原则的英文描述有好几个版本，比如下面这几个。</p>
+<ul>
+<li>Keep It Simple and Stupid.</li>
+<li>Keep It Short and Simple.</li>
+<li>Keep It Simple and Straightforward.</li>
+</ul>
+<p>不过，仔细看你就会发现，它们要表达的意思其实差不多，翻译成中文就是：尽量保持简单。</p>
+<p>KISS 原则是保证代码可读性和可维护性的重要手段。KISS 原则中的“简单”并不是以代码行数来考量的。代码行数越少并不代表代码越简单，我们还要考虑逻辑复杂度、实现难度、代码的可读性等。而且，本身就复杂的问题，用复杂的方法解决，并不违背 KISS 原则。除此之外，同样的代码，在某个业务场景下满足 KISS 原则，换一个应用场景可能就不满足了。</p>
+<p>对于如何写出满足 KISS 原则的代码，有下面几条指导原则：</p>
+<ul>
+<li>不要使用同事可能不懂的技术来实现代码</li>
+<li>不要重复造轮子，要善于使用已经有的工具类库</li>
+<li>不要过度优化<br>
+DRY<br>
+DRY 原则（Don’t Repeat Yourself）几乎人尽皆知。你可能会觉得，这条原则非常简单、非常容易应用。只要两段代码长得一样，那就是违反 DRY 原则了。真的是这样吗？答案是否定的。这是很多人对这条原则存在的误解。实际上，重复的代码不一定违反 DRY 原则，而且有些看似不重复的代码也有可能违反 DRY 原则。</li>
+</ul>
+<p>通常存在三种典型的代码重复情况，它们分别是：实现逻辑重复、功能语义重复和代码执行重复。这三种代码重复，有的看似违反 DRY，实际上并不违反；有的看似不违反，实际上却违反了。</p>
+<p>实现逻辑重复<br>
+type UserAuthenticator struct {}</p>
+<p>func (ua * UserAuthenticator) authenticate(username, password string) {<br>
+if !ua.isValidUsername(username) {<br>
+// ... code block 1<br>
+}<br>
+if !ua.isValidPassword(username) {<br>
+// ... code block 1<br>
+}<br>
+// ...省略其他代码...<br>
+}</p>
+<p>func (ua * UserAuthenticator) isValidUsername(username string) bool {<br>
+}</p>
+<p>func (ua * UserAuthenticator) isValidPassword(password string) bool {<br>
+}</p>
+<p>假设 isValidUserName() 函数和 isValidPassword() 函数代码重复，看起来明显违反 DRY 原则。为了移除重复的代码，我们对上面的代码做下重构，将 isValidUserName() 函数和 isValidPassword() 函数，合并为一个更通用的函数 isValidUserNameOrPassword()。</p>
+<p>经过重构之后，代码行数减少了，也没有重复的代码了，是不是更好了呢？答案是否定的。单从名字上看，我们就能发现，合并之后的 isValidUserNameOrPassword() 函数，负责两件事情：验证用户名和验证密码，违反了“单一职责原则”和“接口隔离原则”。</p>
+<p>实际上，即便将两个函数合并成 isValidUserNameOrPassword()，代码仍然存在问题。因为 isValidUserName() 和 isValidPassword() 两个函数，虽然从代码实现逻辑上看起来是重复的，但是从语义上并不重复。所谓“语义不重复”指的是：从功能上来看，这两个函数干的是完全不重复的两件事情，一个是校验用户名，另一个是校验密码。尽管在目前的设计中，两个校验逻辑是完全一样的，但如果按照第二种写法，将两个函数的合并，那就会存在潜在的问题。在未来的某一天，如果我们修改了密码的校验逻辑，那这个时候，isValidUserName() 和 isValidPassword() 的实现逻辑就会不相同。我们就要把合并后的函数，重新拆成合并前的那两个函数。</p>
+<p>对于包含重复代码的问题，我们可以通过抽象成更细粒度函数的方式来解决。</p>
+<p>功能语义重复<br>
+在同一个项目代码中有下面两个函数：isValidIp() 和 checkIfIpValid()。尽管两个函数的命名不同，实现逻辑不同，但功能是相同的，都是用来判定 IP 地址是否合法的。</p>
+<p>func isValidIp(ipAddress string) bool {<br>
+// ... 正则表达式判断<br>
+}</p>
+<p>func checkIfIpValid(ipAddress string) bool {<br>
+// ... 字符串方式判断<br>
+}</p>
+<p>在这个例子中，尽管两段代码的实现逻辑不重复，但语义重复，也就是功能重复，我们认为它违反了 DRY 原则。我们应该在项目中，统一一种实现思路，所有用到判断 IP 地址是否合法的地方，都统一调用同一个函数。</p>
+<p>代码执行重复<br>
+type UserService struct {<br>
+userRepo UserRepo<br>
+}</p>
+<p>func (us *UserService) login(email, password string) {<br>
+existed := us.userRepo.checkIfUserExisted(email, password)<br>
+if (!existed) {<br>
+// ...<br>
+}<br>
+user := us.userRepo.getUserByEmail(email)<br>
+}</p>
+<p>type UserRepo struct {}</p>
+<p>func (ur *UserRepo) checkIfUserExisted(email, password string) bool {<br>
+if !ur.isValidEmail(email) {<br>
+// ...<br>
+}<br>
+}</p>
+<p>func (ur *UserRepo) getUserByEmail(email string) User {<br>
+if !ur.isValidEmail(email) {<br>
+// ...<br>
+}<br>
+}<br>
+上面这段代码，既没有逻辑重复，也没有语义重复，但仍然违反了 DRY 原则。这是因为代码中存在“执行重复”。这个问题解决起来比较简单，我们只需要将校验逻辑从 UserRepo 中移除，统一放到 UserService 中（login 方法内）就可以了。</p>
+<p>问题：如何提高代码复用性？</p>
+<ul>
+<li>减少代码耦合</li>
+<li>满足单一职责原则</li>
+<li>模块化业务与非业务逻辑分离</li>
+<li>通用代码下沉</li>
+<li>继承、多态、抽象、封装</li>
+<li>应用模板等设计模式<br>
+LOD<br>
+迪米特法则的英文翻译是：Law of Demeter，缩写是 LOD。单从这个名字上来看，我们完全猜不出这个原则讲的是什么。不过，它还有另外一个更加达意的名字，叫作最小知识原则，英文翻译为：The Least Knowledge Principle。</li>
+</ul>
+<p>迪米特法则法则强调不该有直接依赖关系的类之间，不要有依赖；有依赖关系的类之间，尽量只依赖必要的接口。迪米特法则是希望减少类之间的耦合，让类越独立越好。每个类都应该少了解系统的其他部分。一旦发生变化，需要了解这一变化的类就会比较少。</p>
+<p>前面提到的“单一职责原则”、“接口隔离原则”以及“最小知识原则”，都是实现高内聚低耦合的有效指导思想。“最小知识原则”更强调类与类之间的关系。</p>
+<p>篇幅有限，更多可以参考：https://time.geekbang.org/column/article/179615<br>
+设计模式<br>
+[图片]</p>
+<ul>
+<li>创建型：解决“对象的创建”问题，将创建和使用代码解耦</li>
+<li>结构型：解决“类或对象的组合”问题，将不同功能代码解耦</li>
+<li>行为型：解决“类或对象之间的交互”问题，将不同的行为代码解耦</li>
+</ul>
+<p>《设计模式：可复用面向对象软件的基础》这本书中提到了 23 种经典设计模式。由于篇幅限制，本文只对部分常用设计模式进行简单介绍，更详尽的内容可以通过参考资料部分的极客时间专栏进行学习。</p>
+<p>在学习设计模式之前，我们要有一个意识，就是设计模式包含了代码实现和应用场景两部分，有的时候两个设计模式代码实现比较相似，但应用场景完全不同。<br>
+创建型<br>
+创建型设计模式包括：单例模式、工厂模式、建造者模式、原型模式。它主要解决对象的创建问题，封装复杂的创建过程，解耦对象的创建代码和使用代码。<br>
+单例模式<br>
+单例模式用来创建全局唯一的对象。一个类只允许创建一个对象（或者叫实例），那这个类就是一个单例类，这种设计模式就叫作单例模式。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/1_Singleton<br>
+应用场景</p>
+<ul>
+<li>处理资源访问冲突（比如写日志文件）</li>
+<li>表示全局唯一类（比如项目配置文件）<br>
+应用举例<br>
+https://code.byted.org/gopkg/logs<br>
+logs.CtxError(ctx, &quot;[XXXX] Get xxx failed: err=%+v&quot;, err)<br>
+package logs</li>
+</ul>
+<p>var (<br>
+defaultLogger      *Logger<br>
+...<br>
+)</p>
+<p>func init() {<br>
+defaultLogger = NewConsoleLogger()<br>
+...<br>
+}</p>
+<p>func CtxError(ctx context.Context, format string, v ...interface{}) {<br>
+defaultLogger.CtxError(ctx, format, v...)<br>
+}</p>
+<p>引申<br>
+尽管单例是一个很常用的设计模式，在实际的开发中，我们也确实经常用到它，但是，有些人认为单例是一种反模式（anti-pattern），并不推荐使用，主要的理由有以下几点：</p>
+<ul>
+<li>单例对 OOP 特性的支持不友好</li>
+<li>单例会隐藏类之间的依赖关系</li>
+<li>单例对代码的扩展性不友好</li>
+<li>单例对代码的可测试性不友好</li>
+<li>单例不支持有参数的构造函数</li>
+</ul>
+<p>其实模式本身没有对错，关键看你怎么用。如果单例类并没有后续扩展的需求，并且不依赖外部系统，那设计成单例类就没有太大问题。</p>
+<p>思考：单例模式和全局变量的区别？</p>
+<p>工厂模式<br>
+工厂模式用来创建不同但是相关类型的对象（继承同一父类或者接口的一组子类），由给定的参数来决定创建哪种类型的对象。实际上，如果创建对象的逻辑并不复杂，那我们直接通过 new 来创建对象就可以了，不需要使用工厂模式。当创建逻辑比较复杂，是一个“大工程”的时候，我们就考虑使用工厂模式，封装对象的创建过程，将对象的创建和使用相分离。</p>
+<p>工厂模式包括简单工厂、工厂方法、抽象工厂这 3 种细分模式。其中，简单工厂和工厂方法比较常用，抽象工厂的应用场景比较特殊，所以很少用到。</p>
+<ul>
+<li>简单工厂：当每个对象的创建逻辑都比较简单的时候，我们推荐使用简单工厂模式，将多个对象的创建逻辑放到一个工厂类中。</li>
+<li>工厂方法：当每个对象的创建逻辑都比较复杂的时候，为了避免设计一个过于庞大的工厂类，我们推荐使用工厂方法模式，将创建逻辑拆分得更细，每个对象的创建逻辑独立到各自的工厂类中。</li>
+</ul>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/2_Factory<br>
+应用场景<br>
+详细点说，工厂模式的作用有下面 4 个，这也是判断要不要使用工厂模式最本质的参考标准。</p>
+<ul>
+<li>封装变化：创建逻辑有可能变化，封装成工厂类之后，创建逻辑的变更对调用者透明。</li>
+<li>代码复用：创建代码抽离到独立的工厂类之后可以复用。</li>
+<li>隔离复杂性：封装复杂的创建逻辑，调用者无需了解如何创建对象。</li>
+<li>控制复杂度：将创建代码抽离出来，让原本的函数或类职责更单一，代码更简洁。</li>
+</ul>
+<p>建造者模式<br>
+工厂模式是用来创建不同但是相关类型的对象（继承同一父类或者接口的一组子类），由给定的参数来决定创建哪种类型的对象。建造者模式是用来创建一种类型的复杂对象，可以通过设置不同的可选参数，“定制化”地创建不同的对象。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/3_Builder/builder.go<br>
+应用场景</p>
+<ul>
+<li>我们把类的必填属性放到构造函数中，强制创建对象的时候就设置。如果必填的属性有很多，把这些必填属性都放到构造函数中设置，那构造函数就又会出现参数列表很长的问题。如果我们把必填属性通过 set() 方法设置，那校验这些必填属性是否已经填写的逻辑就无处安放了。</li>
+<li>如果类的属性之间有一定的依赖关系或者约束条件，我们继续使用构造函数配合 set() 方法的设计思路，那这些依赖关系或约束条件的校验逻辑就无处安放了。</li>
+<li>如果我们希望创建不可变对象，也就是说，对象在创建好之后，就不能再修改内部的属性值，要实现这个功能，我们就不能在类中暴露 set() 方法。构造函数配合 set() 方法来设置属性值的方式就不适用了。<br>
+应用举例<br>
+kite/kitex client 初始化<br>
+// specify the address of the server<br>
+opts = append(opts, client.WithHostPorts(&quot;localhost:8888&quot;))<br>
+// construct a client<br>
+cli := xxxservice.MustNewClient(&quot;kitex.thrift.example&quot;, opts...)<br>
+结构型<br>
+结构型模式主要总结了一些类或对象组合在一起的经典结构，这些经典的结构可以解决特定应用场景的问题。结构型模式包括：代理模式、桥接模式、装饰器模式、适配器模式、门面模式、组合模式、享元模式。<br>
+代理模式<br>
+代理模式在不改变原始类接口的条件下，为原始类定义一个代理类，主要目的是控制访问，而非加强功能，这是它跟装饰器模式最大的不同。一般情况下，我们让代理类和原始类实现同样的接口。但是，如果原始类并没有定义接口，并且原始类代码并不是我们开发维护的。在这种情况下，我们可以通过让代理类继承原始类的方法来实现代理模式。</li>
+</ul>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/4_Proxy/proxy.go<br>
+应用场景<br>
+代理模式常用在业务系统中开发一些非功能性需求，比如：监控、统计、鉴权、限流、事务、幂等、日志。我们将这些附加功能与业务功能解耦，放到代理类统一处理，让程序员只需要关注业务方面的开发。除此之外，代理模式还可以用在 RPC、缓存等应用场景中。</p>
+<p>装饰器模式<br>
+装饰器模式主要解决继承关系过于复杂的问题，通过组合来替代继承，给原始类添加增强功能。这也是判断是否该用装饰器模式的一个重要的依据。除此之外，装饰器模式还有一个特点，那就是可以对原始类嵌套使用多个装饰器。为了满足这样的需求，在设计的时候，装饰器类需要跟原始类继承相同的抽象类或者接口。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/5_Decorator/decorator.go<br>
+应用场景<br>
+增强原始类的功能，比较常见，就不一一列举了。<br>
+应用举例<br>
+go/src/io/io.go<br>
+// ReadCloser is the interface that groups the basic Read and Close methods.<br>
+type ReadCloser interface {<br>
+Reader<br>
+Closer<br>
+}<br>
+go/src/compress/flate/inflate.go<br>
+// Package flate implements the DEFLATE compressed data format, described in<br>
+// RFC 1951.  The gzip and zlib packages implement access to DEFLATE-based file<br>
+// formats.<br>
+package flate</p>
+<p>type decompressor struct { ... }</p>
+<p>func (f *decompressor) Read(b []byte) (int, error) {<br>
+...<br>
+}</p>
+<p>func (f *decompressor) Close() error {<br>
+...<br>
+}</p>
+<p>func NewReader(r io.Reader) io.ReadCloser {<br>
+fixedHuffmanDecoderInit()</p>
+<p>var f decompressor<br>
+f.r = makeReader(r)<br>
+f.bits = new([maxNumLit + maxNumDist]int)<br>
+f.codebits = new([numCodes]int)<br>
+f.step = (*decompressor).nextBlock<br>
+f.dict.init(maxMatchOffset, nil)<br>
+return &amp;f<br>
+}<br>
+go/src/compress/zlib/reader.go<br>
+type reader struct { // 实现了 ReadCloser 接口<br>
+r            flate.Reader<br>
+decompressor io.ReadCloser // 解压器，实现了 ReadCloser 接口。z.decompressor = flate.NewReader(z.r)<br>
+digest       hash.Hash32<br>
+err          error<br>
+scratch      [4]byte<br>
+}</p>
+<p>// 重写 Read，增强 decompressor 的功能<br>
+func (z *reader) Read(p []byte) (int, error) {<br>
+if z.err != nil {<br>
+return 0, z.err<br>
+}</p>
+<p>var n int<br>
+n, z.err = z.decompressor.Read(p)<br>
+z.digest.Write(p[0:n])<br>
+if z.err != io.EOF {<br>
+// In the normal case we return here.<br>
+return n, z.err<br>
+}</p>
+<p>// Finished file; check checksum.<br>
+if _, err := io.ReadFull(z.r, z.scratch[0:4]); err != nil {<br>
+if err == io.EOF {<br>
+err = io.ErrUnexpectedEOF<br>
+}<br>
+z.err = err<br>
+return n, z.err<br>
+}<br>
+// ZLIB (RFC 1950) is big-endian, unlike GZIP (RFC 1952).<br>
+checksum := uint32(z.scratch[0])&lt;&lt;24 | uint32(z.scratch[1])&lt;&lt;16 | uint32(z.scratch[2])&lt;&lt;8 | uint32(z.scratch[3])<br>
+if checksum != z.digest.Sum32() {<br>
+z.err = ErrChecksum<br>
+return n, z.err<br>
+}<br>
+return n, io.EOF<br>
+}</p>
+<p>func (z *reader) Close() error {<br>
+if z.err != nil &amp;&amp; z.err != io.EOF {<br>
+return z.err<br>
+}<br>
+z.err = z.decompressor.Close()<br>
+return z.err<br>
+}</p>
+<p>适配器模式<br>
+代理模式、装饰器模式提供的都是跟原始类相同的接口，而适配器提供跟原始类不同的接口。适配器模式是用来做适配的，它将不兼容的接口转换为可兼容的接口，让原本由于接口不兼容而不能一起工作的类可以一起工作。适配器模式有两种实现方式：类适配器和对象适配器。其中，类适配器使用继承关系来实现，对象适配器使用组合关系来实现。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/6_Adapter/adapter.go<br>
+上述代码提供了类适配器和对象适配器两种方式。针对这两种实现方式，在实际的开发中，到底该如何选择使用哪一种呢？<br>
+判断的标准主要有两个，一个是 Adaptee 接口的个数，另一个是 Adaptee 和 ITarget 的契合程度。</p>
+<ul>
+<li>如果 Adaptee 接口并不多，那两种实现方式都可以。</li>
+<li>如果 Adaptee 接口很多，而且 Adaptee 和 ITarget 接口定义大部分都相同，那我们推荐使用类适配器，因为 Adaptor 复用父类 Adaptee 的接口，比起对象适配器的实现方式，Adaptor 的代码量要少一些。</li>
+<li>如果 Adaptee 接口很多，而且 Adaptee 和 ITarget 接口定义大部分都不相同，那我们推荐使用对象适配器，因为组合结构相对于继承更加灵活。<br>
+应用场景<br>
+适配器模式是一种事后的补救策略，用来补救设计上的缺陷。应用这种模式算是“无奈之举”。如果在设计初期，我们就能规避接口不兼容的问题，那这种模式就无用武之地了（不可能完全规避）。在实际的开发中，什么情况下才会出现接口不兼容呢？通常有下面这 5 种场景：</li>
+<li>封装有缺陷的接口设计</li>
+<li>统一多个类的接口设计</li>
+<li>替换依赖的外部系统</li>
+<li>兼容老版本接口</li>
+<li>适配不同格式的数据</li>
+</ul>
+<p>门面模式<br>
+门面模式原理、实现都非常简单，应用场景比较明确。它通过封装细粒度的接口，提供组合各个细粒度接口的高层次接口，来提高接口的易用性，或者解决性能、分布式事务等问题。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/7_Facade/facade.go<br>
+应用场景</p>
+<ul>
+<li>解决易用性问题</li>
+<li>解决性能问题<br>
+暂时无法在飞书文档外展示此内容</li>
+<li>解决事务问题（封装一个接口，调用两个不同的 dao 层方法，在一个事务中执行）</li>
+</ul>
+<p>几种模式的区别<br>
+代理、装饰器、适配器，这几种模式是比较常用的结构型设计模式。它们的代码结构非常相似。笼统来说，它们都可以称为 Wrapper 模式，也就是通过 Wrapper 类二次封装原始类。<br>
+尽管代码结构相似，但这几种设计模式的用意完全不同，也就是说要解决的问题、应用场景不同，这也是它们的主要区别。</p>
+<ul>
+<li>代理模式：代理模式在不改变原始类接口的条件下，为原始类定义一个代理类，主要目的是控制访问，而非加强功能，这是它跟装饰器模式最大的不同。</li>
+<li>装饰器模式：装饰者模式在不改变原始类接口的情况下，对原始类功能进行增强，并且支持多个装饰器的嵌套使用。</li>
+<li>适配器模式：适配器模式是一种事后的补救策略。适配器提供跟原始类不同的接口，而代理模式、装饰器模式提供的都是跟原始类相同的接口。<br>
+行为型<br>
+创建型设计模式主要解决“对象的创建”问题，结构型设计模式主要解决“类或对象的组合”问题，那行为型设计模式主要解决的就是“类或对象之间的交互”问题。行为型模式比较多，有 11 种，它们分别是：观察者模式、模板模式、策略模式、职责链模式、迭代器模式、状态模式、访问者模式、备忘录模式、命令模式、解释器模式、中介模式。<br>
+观察者模式<br>
+观察者模式（Observer Design Pattern）也被称为发布订阅模式（Publish-Subscribe Design Pattern）。在 GoF 的《设计模式》一书中，它的定义是这样的：</li>
+</ul>
+<p>Define a one-to-many dependency between objects so that when one object changes state, all its dependents are notified and updated automatically.</p>
+<p>翻译成中文就是：在对象之间定义一个一对多的依赖，当一个对象状态改变的时候，所有依赖的对象都会自动收到通知。<br>
+一般情况下，被依赖的对象叫作被观察者（Observable），依赖的对象叫作观察者（Observer）。不过，在实际的项目开发中，这两种对象的称呼是比较灵活的，有各种不同的叫法，比如：Subject-Observer、Publisher-Subscriber、Producer-Consumer、EventEmitter-EventListener、Dispatcher-Listener。不管怎么称呼，只要应用场景符合刚刚给出的定义，都可以看作观察者模式。</p>
+<p>观察者模式将观察者和被观察者代码解耦。观察者模式的应用场景非常广泛，小到代码层面的解耦，大到架构层面的系统解耦，再或者一些产品的设计思路，都有这种模式的影子，比如，消息队列、邮件订阅、RSS Feeds，本质上都是观察者模式。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/8_Observer/observer.go<br>
+应用场景<br>
+如前所属，观察者模式既有微观场景（代码层面）的应用，也有宏观层面（系统架构）的应用。</p>
+<ul>
+<li>微观（解耦不同模块）：前端 UI 变更及状态管理、各种编程语言提供的事件总线（比如 Java 的 Guava EventBus）</li>
+<li>宏观（解耦上下游）：基于消息队列的各种场景</li>
+</ul>
+<p>模板模式<br>
+模板方法模式在一个方法中定义一个算法骨架，并将某些步骤推迟到子类中实现。模板方法模式可以让子类在不改变算法整体结构的情况下，重新定义算法中的某些步骤。这里的“算法”，我们可以理解为广义上的“业务逻辑”，并不特指数据结构和算法中的“算法”。这里的算法骨架就是“模板”，包含算法骨架的方法就是“模板方法”，这也是模板方法模式名字的由来。</p>
+<p>模板模式有两大作用：复用和扩展。其中复用指的是，所有的子类可以复用父类中提供的模板方法的代码。扩展指的是，框架通过模板模式提供功能扩展点，让框架用户可以在不修改框架源码的情况下，基于扩展点定制化框架的功能。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/9_Template<br>
+应用场景<br>
+围绕复用和扩展展开，比如多个 DAL 类复用数据访问逻辑（LocalCache -&gt; Redis -&gt; DB）。<br>
+应用举例<br>
+例子一<br>
+Go 的自定义排序<br>
+package main</p>
+<p>import (<br>
+&quot;fmt&quot;<br>
+&quot;sort&quot;<br>
+)</p>
+<p>type Person struct {<br>
+Name string<br>
+Age  int<br>
+}</p>
+<p>func (p Person) String() string {<br>
+return fmt.Sprintf(&quot;%s: %d&quot;, p.Name, p.Age)<br>
+}</p>
+<p>// ByAge implements sort.Interface for []Person based on<br>
+// the Age field.<br>
+type ByAge []Person</p>
+<p>func (a ByAge) Len() int           { return len(a) }<br>
+func (a ByAge) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }<br>
+func (a ByAge) Less(i, j int) bool { return a[i].Age &lt; a[j].Age }</p>
+<p>func main() {<br>
+people := []Person{<br>
+{&quot;Bob&quot;, 31},<br>
+{&quot;John&quot;, 42},<br>
+{&quot;Michael&quot;, 17},<br>
+{&quot;Jenny&quot;, 26},<br>
+}</p>
+<pre><code>    // 方式一（模板模式）
+    sort.Sort(ByAge(people)) // or sort.Stable
+    
+    // 方式二
+    sort.Slice(people, func(i, j int) bool { // or sort.SliceStable
+            return people[i].Age &gt; people[j].Age
+    })
+</code></pre>
+<p>}<br>
+go/src/sort/sort.go<br>
+type Interface interface {<br>
+Len() int<br>
+Less(i, j int) bool<br>
+Swap(i, j int)<br>
+}</p>
+<p>func Sort(data Interface) {<br>
+n := data.Len()<br>
+quickSort(data, 0, n, maxDepth(n)) // 内部调用 data.Len()、data.Swap()、data.Less()<br>
+}<br>
+例子二<br>
+LocalCache -&gt; Redis -&gt; DB<br>
+https://codebase.byted.org/repo/ies/effect_api/-/blob/app/dal/base.go</p>
+<p>策略模式<br>
+策略模式定义一族算法类，将每个算法分别封装起来，让它们可以互相替换。策略模式可以使算法的变化独立于使用它们的客户端（这里的客户端代指使用算法的代码）。策略模式用来解耦策略的定义、创建、使用。实际上，一个完整的策略模式就是由这三个部分组成的。</p>
+<p>工厂模式是解耦对象的创建和使用，观察者模式是解耦观察者和被观察者。策略模式跟两者类似，也能起到解耦的作用，不过，它解耦的是策略的定义、创建、使用这三部分。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/10_Strategy/strategy.go<br>
+如果光从代码来看，策略模式和工厂模式有一些相似，只是多了策略使用这一部分，但要牢记一点，设计模式是和场景绑定的。策略模式面向的是算法类的定义、创建和使用，比如不同促销活动下的价格计算、不同场景下的排序算法选择等。<br>
+应用场景<br>
+在实际的项目开发中，策略模式也比较常用。最常见的应用场景是，利用它来避免冗长的 if-else 或 switch 分支判断。不过，它的作用还不止如此。它也可以像模板模式那样，提供框架的扩展点等等。实际上，策略模式主要的作用还是解耦策略的定义、创建和使用，控制代码的复杂度，让每个部分都不至于过于复杂、代码量过多。除此之外，对于复杂代码来说，策略模式还能让其满足开闭原则，添加新策略的时候，最小化、集中化代码改动，减少引入 bug 的风险。<br>
+应用举例<br>
+例子一<br>
+https://codebase.byted.org/repo/ies/media_c/-/blob/app/service/afrserv/base.go（比较的例子，不完全合适）<br>
+例子二<br>
+https://code.byted.org/gopkg/hashx（封装一系列 hash 算法）<br>
+https://code.byted.org/gopkg/compressx（封装一系列压缩算法）</p>
+<p>职责链模式<br>
+在职责链模式中，多个处理器依次处理同一个请求。一个请求先经过 A 处理器处理，然后再把请求传递给 B 处理器，B 处理器处理完后再传递给 C 处理器，以此类推，形成一个链条。链条上的每个处理器各自承担各自的处理职责，所以叫作职责链模式。</p>
+<p>在 GoF 的定义中，一旦某个处理器能处理这个请求，就不会继续将请求传递给后续的处理器了。当然，在实际的开发中，也存在对这个模式的变体，那就是请求不会中途终止传递，而是会被所有的处理器都处理一遍。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/11_Responsibility/responsibility.go<br>
+应用场景<br>
+职责链模式常用在框架开发中，用来实现中间件、过滤器、拦截器等功能，让框架的使用者在不需要修改框架源码的情况下，添加新的过滤、拦截功能。这也体现了之前讲到的对扩展开放、对修改关闭的设计原则。<br>
+应用举例<br>
+gin 框架的中间件就应用了职责链模式。</p>
+<p>状态模式<br>
+状态模式一般用来实现状态机，而状态机常用在游戏、工作流引擎等系统开发中。状态机又叫有限状态机，它由 3 个部分组成：状态、事件、动作。其中，事件也称为转移条件。事件触发状态的转移及动作的执行。不过，动作不是必须的，也可能只转移状态，不执行任何动作。</p>
+<p>代码实现<br>
+https://codebase.byted.org/repo/xiongjunjie.frontend/go_design_pattern/-/blob/12_State<br>
+针对状态机，我们总结了三种实现方式。</p>
+<ul>
+<li>第一种实现方式叫分支逻辑法。利用 if-else 或者 switch-case 分支逻辑，参照状态转移图，将每一个状态转移原模原样地直译成代码。对于简单的状态机来说，这种实现方式最简单、最直接，是首选。但是，对于复杂的状态机来说，这种实现方式极易漏写或者错写某个状态转移。除此之外，代码中充斥着大量的 if-else 或者 switch-case 分支判断逻辑，可读性和可维护性都很差</li>
+<li>第二种实现方式叫查表法。对于状态很多、状态转移比较复杂的状态机来说，查表法比较合适。通过二维数组来表示状态转移图，能极大地提高代码的可读性和可维护性。但是，如果要执行的动作并非这么简单，而是一系列复杂的逻辑操作（比如加减积分、写数据库，还有可能发送消息通知等等），我们就没法用如此简单的二维数组来表示了。这也就是说，查表法的实现方式有一定局限性。</li>
+<li>第三种实现方式就是利用状态模式。对于状态并不多、状态转移也比较简单，但事件触发执行的动作包含的业务逻辑可能比较复杂的状态机来说，我们首选这种实现方式。状态模式通过将事件触发的状态转移和动作执行，拆分到不同的状态类中，来避免分支判断逻辑。<br>
+应用场景</li>
+<li>游戏开发（比如游戏角色在不同形态之间的转化）</li>
+<li>工作流引擎</li>
+<li>其他状态转移场景<br>
+应用举例<br>
+ByteState介绍<br>
+最后<br>
+分享一句不知道在哪里看到的话：Think For Future, Design For Extension, But Just Do For Now !<br>
+翻译一下，不要过度设计，不要硬套模式，在不同阶段选择最适合的方案，做好长远思考和设计，保证扩展性，但只当下做最必要的事情。</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="https://mzhtech.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
