@@ -1,0 +1,942 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>常见的限流算法及自适应 | 今天学习了没</title>
+<link rel="shortcut icon" href="https://mzhtech.github.io/favicon.ico?v=1731655632816">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://mzhtech.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="常见的限流算法及自适应 | 今天学习了没 - Atom Feed" href="https://mzhtech.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="前言
+在分布式系统中，如果某个服务节点发生故障或者网络发生异常，都有可能导致调用方被阻塞等待。如果超时时间设置很长，调用方资源很可能被耗尽。这又导致了调用方的上游系统发生资源耗尽的情况，最终导致系统雪崩。
+要防止系统发生雪崩，就必须要有容错..." />
+    <meta name="keywords" content="稳定性,Golang" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://mzhtech.github.io">
+  <img class="avatar" src="https://mzhtech.github.io/images/avatar.png?v=1731655632816" alt="">
+  </a>
+  <h1 class="site-title">
+    今天学习了没
+  </h1>
+  <p class="site-description">
+    希望每天都有收获
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              常见的限流算法及自适应
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-09-25
+              </span>
+              <span>
+                27 min read
+              </span>
+              
+                <a href="https://mzhtech.github.io/tag/cJNTpH2hL/" class="post-tag">
+                  # 稳定性
+                </a>
+              
+                <a href="https://mzhtech.github.io/tag/_IpVibSEx/" class="post-tag">
+                  # Golang
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h2 id="前言">前言</h2>
+<p>在分布式系统中，如果某个服务节点发生故障或者网络发生异常，都有可能导致调用方被阻塞等待。如果超时时间设置很长，调用方资源很可能被耗尽。这又导致了调用方的上游系统发生资源耗尽的情况，最终导致系统雪崩。</p>
+<p>要防止系统发生雪崩，就必须要有容错设计。如果遇到突增流量，一般的做法是对非核心业务功能采用熔断和服务降级的措施来保护核心业务功能正常服务，而对于核心功能服务，则需要采用限流的措施。</p>
+<p>今天我们来聊一聊系统容错中的限流、熔断和服务降级，并主要对限流的经典算法进行分析。</p>
+<p>相信你看完本篇文章，一定能够对系统容错的常见策略——限流、熔断、降级有更深的理解和体会。</p>
+<h2 id="概述">概述</h2>
+<h3 id="1-熔断客户端">1. 熔断（客户端）</h3>
+<p>在服务的依赖调用中，被调用方出现故障时，出于自我保护的目的，调用方会主动停止调用，并根据业务需要进行相应处理。调用方这种主动停止调用的行为我们称之为熔断。</p>
+<h4 id="为什么要熔断">为什么要熔断？</h4>
+<p>假定服务A依赖服务B，当服务B处于正常状态，整个调用是健康的，服务A可以得到服务B的正常响应。当服务B出现故障时，比如响应缓慢或者响应超时，如果服务A继续请求服务B，那么服务A的响应时间也会增加，进而导致服务A响应缓慢。如果服务A不进行熔断处理，服务B的故障会传导至服务A，最终导致服务A也不可用。</p>
+<h3 id="2-限流服务端">2. 限流（服务端）</h3>
+<p>限流是针对服务请求数量的一种自我保护机制，当请求数量超出服务的处理能力时，会自动丢弃新来的请求。</p>
+<h4 id="为什么要限流">为什么要限流？</h4>
+<p>任何一个系统的处理能力都是有极限的，假定服务A的处理能力为QPS=100，当QPS&lt;100时服务A可以提供正常的服务。当QPS&gt;100时，由于请求量增大，会出现争抢服务资源的情况（数据库连接、CPU、内存等），导致服务A处理缓慢；当QPS继续增大时，可能会造成服务A响应更加缓慢甚至奔溃。如果不进行限流控制，服务A始终会面临着被大流量冲击的风险。做好系统请求流量的评估，制定合理的限流策略，是我们进行系统高可用保护的第一步。</p>
+<h3 id="3-降级">3. 降级</h3>
+<p>降级是通过开关配置将某些不重要的业务功能屏蔽掉，以提高服务处理能力。在大促场景中经常会对某些服务进行降级处理，大促结束之后再进行复原。</p>
+<h4 id="为什么要降级">为什么要降级？</h4>
+<p>在不影响业务核心链路的情况下，屏蔽某些不重要的业务功能，可以节省系统的处理时间，提供系统的响应能力，在服务器资源固定的前提下处理更多的请求。</p>
+<h2 id="熔断">熔断</h2>
+<p>无论是令牌桶、漏桶还是自适应限流的方法，总的来说都是服务端的单机限流方式。虽然服务端限流可以帮助我们抗住一定的压力，但是拒绝请求毕竟还是有成本的。如果我们的本来流量可以支撑1w QPS，加了限流可以支撑在10w QPS的情况下仍然可以提供1w QPS的有效请求，但是流量突然再翻了10倍，来到100w QPS，那么服务该挂还是得挂。</p>
+<p>所以我们的可用性建设不仅仅是服务端做建设就可以万事大吉了，得在整个链路上的每个组件都做好自己的事情才行，今天我们就来一起看一下客户端上的限流措施：熔断。</p>
+<p>熔断器存在三种状态：</p>
+<ul>
+<li><strong>关闭 (closed)</strong>: 关闭状态下没有触发断路保护，所有的请求都正常通行。</li>
+<li><strong>打开 (open)</strong>: 当错误阈值触发之后，就进入开启状态，这个时候所有的流量都会被节流，不运行通行。</li>
+<li><strong>半打开 (half-open)</strong>: 处于打开状态一段时间之后，会尝试放行一个流量来探测当前 server 端是否可以接收新流量，如果没有问题就会进入关闭状态，如果有问题又会回到打开状态。</li>
+</ul>
+<h2 id="方案对比">方案对比</h2>
+<h3 id="hystrix-go">Hystrix-Go</h3>
+<p>熔断器中比较典型的实现就是 Hystrix。</p>
+<p><strong>参考链接</strong>：<a href="%E9%93%BE%E6%8E%A5">hystrix-go 使用与原理 | Go 技术论坛</a></p>
+<p>Hystrix 是由 Netflix 开发的一款开源组件，提供了基础的熔断功能。Hystrix 将降级的策略封装在 Command 中，提供了 run 和 fallback 两个方法，前者表示正常的逻辑，比如微服务之间的调用……如果发生了故障，再执行 fallback 方法返回结果，我们可以把它理解成保底操作。如果正常逻辑在短时间内频繁发生故障，那么可能会触发短路，也就是之后的请求不再执行 run，而是直接执行 fallback。</p>
+<p>更多关于 Hystrix 的信息可以查看 <a href="https://github.com/Netflix/Hystrix">GitHub</a>，而 Hystrix-Go 则是用 Go 实现的 Hystrix 版，更确切的说，是简化版。</p>
+<h3 id="使用方法">使用方法：</h3>
+<p>Hystrix 实现熔断一般包括两步：</p>
+<ol>
+<li><strong>配置熔断规则</strong></li>
+<li><strong>设置熔断逻辑</strong></li>
+</ol>
+<p>一个简单的🌰：</p>
+<pre><code class="language-go">// 第一步：配置熔断规则
+hystrix.ConfigureCommand(&quot;wuqq&quot;, hystrix.CommandConfig{
+        Timeout:                int(3 * time.Second),
+        MaxConcurrentRequests:  10,
+        SleepWindow:            5000,
+        RequestVolumeThreshold: 10,
+        ErrorPercentThreshold:  30,
+    })
+
+// 第二步：设置熔断逻辑
+// Do 是异步，Go 是同步
+
+_ = hystrix.Do(&quot;wuqq&quot;, func() error {
+    // talk to other services
+    _, err := http.Get(&quot;https://www.baidu.com/&quot;)
+    if err != nil {
+        fmt.Println(&quot;get error:%v&quot;, err)
+        return err
+    }
+    return nil
+}, func(err error) error {
+    fmt.Printf(&quot;handle error:%v\n&quot;, err)
+    return nil
+})
+</code></pre>
+<p><strong>Do 函数需要三个参数</strong>，第一个参数是 command 名称，你可以把每个名称当成一个独立的服务，第二个参数是处理正常的逻辑，比如 HTTP 调用服务，返回参数是 err。如果处理调用失败，那么就执行第三个参数逻辑，我们称为保底操作。由于服务错误率过高导致熔断器开启，那么之后的请求也直接回调此函数。</p>
+<h3 id="配置参数含义">配置参数含义：</h3>
+<ul>
+<li><strong>Timeout</strong>: 执行 command 的超时时间。</li>
+<li><strong>MaxConcurrentRequests</strong>: command 的最大并发量。</li>
+<li><strong>SleepWindow</strong>: 当熔断器被打开后，SleepWindow 的时间就是控制过多久后去尝试服务是否可用了。</li>
+<li><strong>RequestVolumeThreshold</strong>: 一个统计窗口 10 秒内请求数量。达到这个请求数量后才去判断是否要开启熔断。</li>
+<li><strong>ErrorPercentThreshold</strong>: 错误百分比，请求数量大于等于 RequestVolumeThreshold 并且错误率到达这个百分比后就会启动熔断。</li>
+</ul>
+<h3 id="核心实现">核心实现</h3>
+<p>核心实现的方法是 AllowRequest，IsOpen 判断当前是否处于熔断状态，allowSingleTest 就是去看是否过了一段时间需要重新进行尝试。</p>
+<pre><code class="language-go">func (circuit *CircuitBreaker) AllowRequest() bool {        
+    return !circuit.IsOpen() || circuit.allowSingleTest()
+}
+
+func (circuit *CircuitBreaker) IsOpen() bool {
+   circuit.mutex.RLock()
+   o := circuit.forceOpen || circuit.open
+   circuit.mutex.RUnlock()
+
+   if o {
+      return true
+   }
+
+   if uint64(circuit.metrics.Requests().Sum(time.Now())) &lt; getSettings(circuit.Name).RequestVolumeThreshold {
+      return false
+   }
+
+   if !circuit.metrics.IsHealthy(time.Now()) {
+      // too many failures, open the circuit
+      circuit.setOpen()
+      return true
+   }
+
+   return false
+}
+</code></pre>
+<p>Hystrix-Go 已经可以比较好地满足我们的需求，但是存在一个问题就是一旦触发了熔断，在一段时间之内就会被一刀切地拦截请求，所以我们来看看 Google SRE 的一个实现。</p>
+<h2 id="google-sre保护算法">Google SRE保护算法</h2>
+<p>这个算法的好处是不会直接一刀切的丢弃所有请求，而是计算出一个概率来进行判断。当成功的请求数量越少，K 越小的时候计算出的概率就越大，表示这个请求被丢弃的概率越大。</p>
+<h3 id="kratos源码分析">Kratos源码分析</h3>
+<pre><code class="language-go">func (b *sreBreaker) Allow() error {
+   // 统计成功的请求，和总的请求
+   success, total := b.summary()
+
+   // 计算当前的成功率
+   k := b.k * float64(success)
+   if log.V(5) {
+      log.Info(&quot;breaker: request: %d, succeed: %d, fail: %d&quot;, total, success, total-success)
+   }
+   // 统计请求量和成功率
+   // 如果 qps 比较小，不触发熔断
+   // 如果成功率比较高，不触发熔断，如果 k = 2，那么就是成功率 &gt;= 50% 的时候就不熔断
+   if total &lt; b.request || float64(total) &lt; k {
+      if atomic.LoadInt32(&amp;b.state) == StateOpen {
+         atomic.CompareAndSwapInt32(&amp;b.state, StateOpen, StateClosed)
+      }
+      return nil
+   }
+   if atomic.LoadInt32(&amp;b.state) == StateClosed {
+      atomic.CompareAndSwapInt32(&amp;b.state, StateClosed, StateOpen)
+   }
+
+   // 计算一个概率，当 dr 值越大，那么被丢弃的概率也就越大
+   // dr 值是，如果失败率越高或者是 k 值越小，那么它越大
+   dr := math.Max(0, (float64(total)-k)/float64(total+1))
+   drop := b.trueOnProba(dr)
+   if log.V(5) {
+      log.Info(&quot;breaker: drop ratio: %f, drop: %t&quot;, dr, drop)
+   }
+   if drop {
+      return ecode.ServiceUnavailable
+   }
+   return nil
+}
+
+// 通过随机来判断是否需要进行熔断
+func (b *sreBreaker) trueOnProba(proba float64) (truth bool) {
+   b.randLock.Lock()
+   truth = b.r.Float64() &lt; proba
+   b.randLock.Unlock()
+   return
+}
+</code></pre>
+<p><strong>参考链接</strong>：<a href="%E9%93%BE%E6%8E%A5">Go可用性(六) 熔断 - Mohuishou</a></p>
+<h2 id="熔断与-failover-结合的思想">熔断与 Failover 结合的思想</h2>
+<p>一句话总结：请求先进入 CircuitBreaker 根据当前熔断器策略决定请求主集群或备集群，若请求主集群且主集群请求失败，则进入 Failover 逻辑 Failover 到备集群中获取数据。</p>
+<p><strong>参考链接</strong>：<a href="%E9%93%BE%E6%8E%A5">CS-SP-Relation-40-Stability - 通用自动容灾组件方案</a></p>
+<h2 id="限流">限流</h2>
+<p>限流，也称流量控制。是指系统在面临高并发，或者大流量请求的情况下，限制新的请求对系统的访问，从而保证系统的稳定性。限流会导致部分用户请求处理不及时或者被拒，这就影响了用户体验。所以一般需要在系统稳定和用户体验之间平衡一下。</p>
+<h3 id="1-固定窗口">1. 固定窗口</h3>
+<p>固定时间内对请求数进行限制，例如说每秒请求不超过50次，那就在0-1秒，1-2秒……n-n+1秒，每秒不超过50次请求。</p>
+<p>可是会出现一个问题，在0.99秒和1.01秒分别有50次请求，对于固定窗口方法，不会限流，但是实际上在0.99秒-1.01秒，这一段不到1s的时间内已经达到了阀值的两倍，以下的滑动窗口方法可以解决这个问题。</p>
+<h3 id="2-滑动窗口">2. 滑动窗口</h3>
+<h4 id="算法思想">算法思想</h4>
+<p>滑动时间窗口算法，是对普通时间窗口计数的优化。</p>
+<p>使用普通时间窗口时，我们会为每个 user_id/ip 维护一个 KV: uidOrIp: timestamp_requestCount。假设限制1秒1000个请求，那么第100ms有一个请求，这个 KV 变成 uidOrIp: timestamp_1，递200ms有1个请求，我们先比较距离记录的 timestamp 有没有超过1s，如果没有只更新 count，此时 KV 变成 uidOrIp: timestamp_2。当第1100ms来一个请求时，更新记录中的 timestamp 并重置计数，KV 变成 uidOrIp: newtimestamp_1。</p>
+<p>普通时间窗口有一个问题，假设有500个请求集中在前1s的后100ms，500个请求集中在后1s的前100ms，其实在这200ms内已经请求超限了，但是由于时间窗每经过1s就会重置计数，就无法识别到此时的请求超限。</p>
+<p>对于滑动时间窗口，我们可以把1ms的时间窗口划分成10个 time slot，每个 time slot 统计某个100ms的请求数量。每经过100ms，有一个新的 time slot 加入窗口，早于当前时间100ms的 time slot 出窗口。窗口内最多维护10个 time slot，储存空间的消耗同样是比较低的。</p>
+<h4 id="适用场景">适用场景</h4>
+<p>与令牌桶一样，有应对突发流量的能力。</p>
+<h3 id="go语言实现">Go语言实现</h3>
+<p>主要就是实现 sliding window 算法。可以参考 Bilibili 开源的 kratos 框架里 circuit breaker 用循环列表保存 time slot 对象的实现，他们这个实现的好处是不用频繁的创建和销毁 time slot 对象。下面给出一个简单的基本实现：</p>
+<pre><code class="language-go">package main
+
+import (
+        &quot;fmt&quot;
+        &quot;sync&quot;
+        &quot;time&quot;
+)
+
+var winMu map[string]*sync.RWMutex
+
+func init() {
+        winMu = make(map[string]*sync.RWMutex)
+}
+
+type timeSlot struct {
+        timestamp time.Time // 这个 timeSlot 的时间起点
+        count     int       // 落在这个 timeSlot 内的请求数
+}
+
+func countReq(win []*timeSlot) int {
+        var count int
+        for _, ts := range win {
+                count += ts.count
+        }
+        return count
+}
+
+type SlidingWindowLimiter struct {
+        SlotDuration time.Duration // time slot 的长度
+        WinDuration  time.Duration // sliding window 的长度
+        numSlots     int           // window 内最多有多少个 slot
+        windows      map[string][]*timeSlot
+        maxReq       int // win duration 内允许的最大请求数
+}
+
+func NewSliding(slotDuration time.Duration, winDuration time.Duration, maxReq int) *SlidingWindowLimiter {
+        return &amp;SlidingWindowLimiter{
+                SlotDuration: slotDuration,
+                WinDuration:  winDuration,
+                numSlots:     int(winDuration / slotDuration),
+                windows:      make(map[string][]*timeSlot),
+                maxReq:       maxReq,
+        }
+}
+
+// 获取 user_id/ip 的时间窗口
+func (l *SlidingWindowLimiter) getWindow(uidOrIp string) []*timeSlot {
+        win, ok := l.windows[uidOrIp]
+        if !ok {
+                win = make([]*timeSlot, 0, l.numSlots)
+        }
+        return win
+}
+
+func (l *SlidingWindowLimiter) storeWindow(uidOrIp string, win []*timeSlot) {
+        l.windows[uidOrIp] = win
+}
+
+func (l *SlidingWindowLimiter) validate(uidOrIp string) bool {
+        // 同一 user_id/ip 并发安全
+        mu, ok := winMu[uidOrIp]
+        if !ok {
+                var m sync.RWMutex
+                mu = &amp;m
+                winMu[uidOrIp] = mu
+        }
+        mu.Lock()
+        defer mu.Unlock()
+
+        win := l.getWindow(uidOrIp)
+        now := time.Now()
+        // 已经过期的 time slot 移出时间窗
+        timeoutOffset := -1
+        for i, ts := range win {
+                if ts.timestamp.Add(l.WinDuration).After(now) {
+                        break
+                }
+                timeoutOffset = i
+        }
+        if timeoutOffset &gt; -1 {
+                win = win[timeoutOffset+1:]
+        }
+
+        // 判断请求是否超限
+        var result bool
+        if countReq(win) &lt; l.maxReq {
+                result = true
+        }
+
+        // 记录这次的请求数
+        var lastSlot *timeSlot
+        if len(win) &gt; 0 {
+                lastSlot = win[len(win)-1]
+                if lastSlot.timestamp.Add(l.SlotDuration).Before(now) {
+                        lastSlot = &amp;timeSlot{timestamp: now, count: 1}
+                        win = append(win, lastSlot)
+                } else {
+                        lastSlot.count++
+                }
+        } else {
+                lastSlot = &amp;timeSlot{timestamp: now, count: 1}
+                win = append(win, lastSlot)
+        }
+
+        l.storeWindow(uidOrIp, win)
+
+        return result
+}
+
+func (l *SlidingWindowLimiter) getUidOrIp() string {
+        return &quot;127.0.0.1&quot;
+}
+
+func (l *SlidingWindowLimiter) IsLimited() bool {
+        return !l.validate(l.getUidOrIp())
+}
+
+func main() {
+        limiter := NewSliding(100*time.Millisecond, time.Second, 10)
+        for i := 0; i &lt; 5; i++ {
+                fmt.Println(limiter.IsLimited())
+        }
+        time.Sleep(100 * time.Millisecond)
+        for i := 0; i &lt; 5; i++ {
+                fmt.Println(limiter.IsLimited())
+        }
+        fmt.Println(limiter.IsLimited())
+        for _, v := range limiter.windows[limiter.getUidOrIp()] {
+                fmt.Println(v.timestamp, v.count)
+        }
+
+        fmt.Println(&quot;a thousand years later...&quot;)
+        time.Sleep(time.Second)
+        for i := 0; i &lt; 7; i++ {
+                fmt.Println(limiter.IsLimited())
+        }
+        for _, v := range limiter.windows[limiter.getUidOrIp()] {
+                fmt.Println(v.timestamp, v.count)
+        }
+}
+</code></pre>
+<h3 id="3-漏桶">3. 漏桶</h3>
+<h4 id="算法思想-2">算法思想</h4>
+<p>与令牌桶是“反向”的算法，当有请求到来时先放到木桶中，worker 以固定的速度从木桶中取出请求进行响应。如果木桶已经满了，直接返回请求频率超限的错误码或者页面。</p>
+<h4 id="适用场景-2">适用场景</h4>
+<p>流量最均匀的限流方式，一般用于流量“整形”，例如保护数据库的限流。先把对数据库的访问加入到木桶中，worker 再以 db 能够承受的 QPS 从木桶中取出请求，去访问数据库。不太适合电商抢购和微博出现热点事件等场景的限流，一是应对突发流量不是很灵活，二是为每个 user_id/ip 维护一个队列（木桶），worker 从这些队列中拉取任务，资源的消耗会比较大。</p>
+<h3 id="go语言实现-2">Go语言实现</h3>
+<p>通常使用队列来实现，在 Go 语言中可以通过 buffered channel 来快速实现，任务加入 channel，开启一定数量的 worker 从 channel 中获取任务执行。</p>
+<pre><code class="language-go">package main
+
+import (
+        &quot;fmt&quot;
+        &quot;sync&quot;
+        &quot;time&quot;
+)
+
+// 每个请求来了，把需要执行的业务逻辑封装成 Task，放入木桶，等待 worker 取出执行
+type Task struct {
+        handler func() Result // worker 从木桶中取出请求对象后要执行的业务逻辑函数
+        resChan chan Result   // 等待 worker 执行并返回结果的 channel
+        taskID  int
+}
+
+//封装业务逻辑的执行结果
+type Result struct {}
+
+// 模拟业务逻辑的函数
+func handler() Result {
+        time.Sleep(300 * time.Millisecond)
+        return Result{}
+}
+
+func NewTask(id int) Task {
+        return Task{
+                handler: handler,
+                resChan: make(chan Result),
+                taskID:  id,
+        }
+}
+
+// 漏桶
+type LeakyBucket struct {
+        BucketSize int       // 木桶的大小
+        NumWorker  int       // 同时从木桶中获取任务执行的 worker 数量
+        bucket     chan Task // 存放任务的木桶
+}
+
+func NewLeakyBucket(bucketSize int, numWorker int) *LeakyBucket {
+        return &amp;LeakyBucket{
+                BucketSize: bucketSize,
+                NumWorker:  numWorker,
+                bucket:     make(chan Task, bucketSize),
+        }
+}
+
+func (b *LeakyBucket) validate(task Task) bool {
+        // 如果木桶已经满了，返回 false
+        select {
+        case b.bucket &lt;- task:
+        default:
+                fmt.Printf(&quot;request[id=%d] is refused\n&quot;, task.taskID)
+                return false
+        }
+
+        // 等待 worker 执行
+        &lt;-task.resChan
+        fmt.Printf(&quot;request[id=%d] is run\n&quot;, task.taskID)
+        return true
+}
+
+func (b *LeakyBucket) Start() {
+        // 开启 worker 从木桶拉取任务执行
+        go func() {
+                for i := 0; i &lt; b.NumWorker; i++ {
+                        go func() {
+                                for {
+                                        task := &lt;-b.bucket
+                                        result := task.handler()
+                                        task.resChan &lt;- result
+                                }
+                        }()
+                }
+        }()
+}
+
+func main() {
+        bucket := NewLeakyBucket(10, 4)
+        bucket.Start()
+
+        var wg sync.WaitGroup
+        for i := 0; i &lt; 20; i++ {
+                wg.Add(1)
+                go func(id int) {
+                        defer wg.Done()
+                        task := NewTask(id)
+                        bucket.validate(task)
+                }(i)
+        }
+        wg.Wait()
+}
+</code></pre>
+<h3 id="常见调包使用">常见调包使用</h3>
+<ul>
+<li><strong>ratelimit package</strong> - <code>go.uber.org/ratelimit</code></li>
+</ul>
+<h3 id="4-令牌桶">4. 令牌桶</h3>
+<h4 id="算法思想-3">算法思想</h4>
+<p>令牌桶是目前使用比较广泛的限流方式。</p>
+<p>想象有一个木桶，以固定的速度往木桶里加入令牌，木桶满了则不再加入令牌。服务收到请求时尝试从木桶中取出一个令牌，如果能够得到令牌则继续执行后续的业务逻辑；如果没有得到令牌，直接返回请求频率超限的错误码或页面等，不继续执行后续的业务逻辑。</p>
+<p><strong>特点</strong>：由于木桶内只要有令牌，请求就可以被处理，所以令牌桶算法可以支持突发流量。同时由于往木桶添加令牌的速度是固定的，且木桶的容量有上限，所以单位时间内处理的请求数也能够得到控制，起到限流的目的。假设加入令牌的速度为 1 token/10ms，桶的容量为500，在请求比较少的时候（小于每10毫秒1个请求）时，木桶可以先&quot;攒&quot;一些令牌（最多500个）。当有突发流量时，一下把木桶内的令牌取空，也就是有500个在并发执行的业务逻辑，之后要等每10ms补充一个新的令牌才能接收一个新的请求。</p>
+<p><strong>令牌桶在接收请求速度上进行限制，漏桶在处理请求速度上进行限制。</strong></p>
+<h4 id="参数设置">参数设置</h4>
+<ul>
+<li><strong>木桶的容量</strong> - 考虑业务逻辑的资源消耗和机器能承载并发处理多少业务逻辑。</li>
+<li><strong>生成令牌的速度</strong> - 太慢的话起不到“攒”令牌应对突发流量的效果。</li>
+</ul>
+<h4 id="适用场景-3">适用场景</h4>
+<p>适合电商抢购或者微博出现热点事件这种场景，因为在限流的同时可以应对一定的突发流量。如果采用均匀速度处理请求的算法，在发生热点事件的时候，会造成大量的用户无法访问，对用户体验的损害比较大。</p>
+<h3 id="go语言实现-3">Go语言实现</h3>
+<p>假设每100ms生产一个令牌，按 user_id/IP 记录访问最近一次访问的时间戳 t_last 和令牌数，每次请求时如果 now - last &gt; 100ms, 增加 (now - last) / 100ms 个令牌。然后，如果令牌数 &gt; 0，令牌数 -1 继续执行后续的业务逻辑，否则返回请求频率超限的错误码或页面。</p>
+<pre><code class="language-go">package main
+
+import (
+        &quot;fmt&quot;
+        &quot;sync&quot;
+        &quot;time&quot;
+)
+
+// 并发访问同一个 user_id/ip 的记录需要上锁
+var recordMu map[string]*sync.RWMutex
+
+func init() {
+        recordMu = make(map[string]*sync.RWMutex)
+}
+
+func max(a, b int) int {
+        if a &gt; b {
+                return a
+        }
+        return b
+}
+
+type TokenBucket struct {
+        BucketSize int // 木桶内的容量：最多可以存放多少个令牌
+        TokenRate  time.Duration // 多长时间生成一个令牌
+        records    map[string]*record // 记录 user_id/ip 的访问记录
+}
+
+// 上次访问时的时间戳和令牌数
+type record struct {
+        last  time.Time
+        token int
+}
+
+func NewTokenBucket(bucketSize int, tokenRate time.Duration) *TokenBucket {
+        return &amp;TokenBucket{
+                BucketSize: bucketSize,
+                TokenRate:  tokenRate,
+                records:    make(map[string]*record),
+        }
+}
+
+func (t *TokenBucket) getUidOrIp() string {
+        // 获取请求用户的 user_id 或者 ip 地址
+        return &quot;127.0.0.1&quot;
+}
+
+// 获取这个 user_id/ip 上次访问时的时间戳和令牌数
+func (t *TokenBucket) getRecord(uidOrIp string) *record {
+        if r, ok := t.records[uidOrIp]; ok {
+                return r
+        }
+        return &amp;record{}
+}
+
+// 保存 user_id/ip 最近一次请求时的时间戳和令牌数量
+func (t *TokenBucket) storeRecord(uidOrIp string, r *record) {
+        t.records[uidOrIp] = r
+}
+
+// 验证是否能获取一个令牌
+func (t *TokenBucket) validate(uidOrIp string) bool {
+        // 并发修改同一个用户的记录上写锁
+        rl, ok := recordMu[uidOrIp]
+        if !ok {
+                var mu sync.RWMutex
+                rl = &amp;mu
+                recordMu[uidOrIp] = rl
+        }
+        rl.Lock()
+        defer rl.Unlock()
+
+        r := t.getRecord(uidOrIp)
+        now := time.Now()
+        if r.last.IsZero() {
+                // 第一次访问初始化为最大令牌数
+                r.last, r.token = now, t.BucketSize
+        } else {
+                if r.last.Add(t.TokenRate).Before(now) {
+                        // 如果与上次请求的间隔超过了 token rate
+                        // 则增加令牌，更新 last
+                        r.token += max(int(now.Sub(r.last)/t.TokenRate), t.BucketSize)
+                        r.last = now
+                }
+        }
+        var result bool
+        if r.token &gt; 0 {
+                // 如果令牌数大于1，取走一个令牌，validate 结果为 true
+                r.token--
+                result = true
+        }
+
+        // 保存最新的 record
+        t.storeRecord(uidOrIp, r)
+        return result
+}
+
+// 返回是否被限流
+func (t *TokenBucket) IsLimited() bool {
+        return !t.validate(t.getUidOrIp())
+}
+
+func main() {
+        tokenBucket := NewTokenBucket(5, 100*time.Millisecond)
+        for i := 0; i &lt; 6; i++ {
+                fmt.Println(tokenBucket.IsLimited())
+        }
+        time.Sleep(100 * time.Millisecond)
+        fmt.Println(tokenBucket.IsLimited())
+}
+</code></pre>
+<h3 id="常见调包使用-2">常见调包使用</h3>
+<ul>
+<li><strong>golang.org/x/time/rate</strong></li>
+</ul>
+<h3 id="5-自适应限流">5. 自适应限流</h3>
+<p>漏桶和令牌桶都会有一个问题就是需要提前设置阀值，但是阀值怎么设定，是否合理是个问题。一般我们需要压测来设定，但是工作量很大，而且不能动态变化。</p>
+<p>本质上就是通过获取线上业务动态变化来更新限流策略。</p>
+<p>我们需要一个数据来做启发阈值，只要这个指标达到了阈值那我们就进入流控当中。常见的选择一般是 CPU、Memory、System Load，这里我们以 CPU 为例。</p>
+<p>只要我们的 CPU 负载超过 80% 的时候，获取过去 5s 的最大吞吐数据，然后再统计当前系统中的请求数量，只要当前系统中的请求数大于最大吞吐那么我们就丢弃这个请求。</p>
+<h3 id="sentinelalibaba">Sentinel（Alibaba）</h3>
+<p>随着微服务的流行，服务和服务之间的稳定性变得越来越重要。Sentinel 是面向分布式服务架构的流量控制组件，主要以流量为切入点，从流量控制、熔断降级、系统自适应保护等多个维度来帮助您保障微服务的稳定性。</p>
+<h4 id="sentinel使用文档">Sentinel使用文档</h4>
+<p>用户接入使用 Sentinel Go 主要需要以下几步：</p>
+<ol>
+<li>对 Sentinel 的运行环境进行相关配置并初始化。API 接口使用细节可以参考：配置方式。</li>
+<li>埋点（定义资源），该步骤主要是确定系统中有哪些资源需要防护，资源定义可参考：新手指南。</li>
+<li>配置规则，该步骤主要是为每个资源都配置具体的规则，规则的配置可参考：新手指南 以及各个模块的使用文档。</li>
+<li>编写资源防护的入口和出口代码。释放方式可参考：新手指南。</li>
+</ol>
+<p>针对埋点资源配置相应的规则，来达到流量控制的效果。目前 Sentinel 支持五种规则：</p>
+<ul>
+<li>流控规则</li>
+<li>流量隔离规则</li>
+<li>熔断规则</li>
+<li>自适应流控规则</li>
+<li>热点参数流控规则</li>
+</ul>
+<h3 id="一个简单的例子sentinel-go-接入-demo">一个简单的例子：Sentinel Go 接入 demo</h3>
+<pre><code class="language-go">import (
+        sentinel &quot;github.com/alibaba/sentinel-golang/api&quot;
+)
+
+func main() {
+        // 第一步：务必先进行初始化
+        err := sentinel.InitDefault()
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        // 第三步：为每个资源配置限流规则
+        _, err = flow.LoadRules([]*flow.Rule{
+                {
+                        Resource:               &quot;some-test&quot;,
+                        Threshold:              10,
+                        TokenCalculateStrategy: flow.Direct,
+                        ControlBehavior:        flow.Reject,
+                },
+        })
+        if err != nil {
+                fmt.Println(err)
+                return
+        }
+
+        ch := make(chan struct{})
+        for i := 0; i &lt; 10; i++ {
+                go func() {
+                        for {
+                                // 第二步：埋点逻辑，埋点资源名为 some-test
+                                e, b := sentinel.Entry(&quot;some-test&quot;)
+                                if b != nil {
+                                        // 达到限流：请求被拒绝，在此处进行处理
+                                        time.Sleep(time.Duration(rand.Uint64()%10) * time.Millisecond)
+                                } else {
+                                        // 为达到限流：请求允许通过，此处编写业务逻辑
+                                        fmt.Println(util.CurrentTimeMillis(), &quot;Passed&quot;)
+                                        time.Sleep(time.Duration(rand.Uint64()%10) * time.Millisecond)
+
+                                        // 务必保证业务结束后调用 Exit
+                                        e.Exit()
+                                }
+                        }
+                }()
+        }
+        &lt;-ch
+}
+</code></pre>
+<h3 id="自适应流控规则">自适应流控规则</h3>
+<p><strong>rule 字段</strong>：</p>
+<pre><code class="language-go">// Rule describes the policy for system resiliency.
+type Rule struct {
+        // ID represents the unique ID of the rule (optional).
+        ID string `json:&quot;id,omitempty&quot;`
+        // MetricType indicates the type of the trigger metric.
+        MetricType MetricType `json:&quot;metricType&quot;`
+        // TriggerCount represents the lower bound trigger of the adaptive strategy.
+        // Adaptive strategies will not be activated until target metric has reached the trigger count.
+        TriggerCount float64 `json:&quot;triggerCount&quot;`
+        // Strategy represents the adaptive strategy.
+        Strategy AdaptiveStrategy `json:&quot;strategy
+        // MetricType indicates the type of the trigger metric.
+        MetricType MetricType `json:&quot;metricType&quot;`
+        // Threshold represents the threshold value for the rule.
+        Threshold float64 `json:&quot;threshold&quot;`
+        // ControlBehavior defines the behavior when the threshold is exceeded.
+        ControlBehavior ControlBehavior `json:&quot;controlBehavior&quot;`
+        // Count represents the count of requests to trigger the rule.
+        Count int `json:&quot;count,omitempty&quot;`
+        // Duration defines the time window for the rule.
+        Duration time.Duration `json:&quot;duration,omitempty&quot;`
+}
+</code></pre>
+<h3 id="自适应流控示例">自适应流控示例</h3>
+<p>自适应流控规则可以根据系统的实时负载动态调整限流阈值。以下是一个简单的示例，展示如何使用 Sentinel 的自适应流控功能：</p>
+<pre><code class="language-go">import (
+        &quot;github.com/alibaba/sentinel-golang/api&quot;
+        &quot;github.com/alibaba/sentinel-golang/core/flow&quot;
+)
+
+func main() {
+        // 初始化 Sentinel
+        err := sentinel.InitDefault()
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        // 配置自适应流控规则
+        _, err = flow.LoadRules([]*flow.Rule{
+                {
+                        Resource:               &quot;adaptive-resource&quot;,
+                        Threshold:              100,
+                        ControlBehavior:        flow.SmoothBreach,
+                        MetricType:            flow.QPS,
+                        Count:                  10,
+                        Duration:               10 * time.Second,
+                },
+        })
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        // 模拟请求
+        for i := 0; i &lt; 200; i++ {
+                go func() {
+                        e, b := sentinel.Entry(&quot;adaptive-resource&quot;)
+                        if b != nil {
+                                // 达到限流，处理拒绝逻辑
+                                fmt.Println(&quot;Request rejected&quot;)
+                        } else {
+                                // 处理请求
+                                fmt.Println(&quot;Request passed&quot;)
+                                e.Exit()
+                        }
+                }()
+        }
+        time.Sleep(5 * time.Second)
+}
+</code></pre>
+<h3 id="总结">总结</h3>
+<p>通过以上的内容，我们深入探讨了系统容错的几种常见策略，包括熔断、限流和服务降级。每种策略都有其独特的实现方式和适用场景。根据不同的业务需求和系统架构，选择合适的容错机制能够有效提升系统的稳定性和可用性。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E5%89%8D%E8%A8%80">前言</a></li>
+<li><a href="#%E6%A6%82%E8%BF%B0">概述</a>
+<ul>
+<li><a href="#1-%E7%86%94%E6%96%AD%E5%AE%A2%E6%88%B7%E7%AB%AF">1. 熔断（客户端）</a>
+<ul>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%86%94%E6%96%AD">为什么要熔断？</a></li>
+</ul>
+</li>
+<li><a href="#2-%E9%99%90%E6%B5%81%E6%9C%8D%E5%8A%A1%E7%AB%AF">2. 限流（服务端）</a>
+<ul>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E9%99%90%E6%B5%81">为什么要限流？</a></li>
+</ul>
+</li>
+<li><a href="#3-%E9%99%8D%E7%BA%A7">3. 降级</a>
+<ul>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E9%99%8D%E7%BA%A7">为什么要降级？</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E7%86%94%E6%96%AD">熔断</a></li>
+<li><a href="#%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94">方案对比</a>
+<ul>
+<li><a href="#hystrix-go">Hystrix-Go</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95">使用方法：</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0%E5%90%AB%E4%B9%89">配置参数含义：</a></li>
+<li><a href="#%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0">核心实现</a></li>
+</ul>
+</li>
+<li><a href="#google-sre%E4%BF%9D%E6%8A%A4%E7%AE%97%E6%B3%95">Google SRE保护算法</a>
+<ul>
+<li><a href="#kratos%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90">Kratos源码分析</a></li>
+</ul>
+</li>
+<li><a href="#%E7%86%94%E6%96%AD%E4%B8%8E-failover-%E7%BB%93%E5%90%88%E7%9A%84%E6%80%9D%E6%83%B3">熔断与 Failover 结合的思想</a></li>
+<li><a href="#%E9%99%90%E6%B5%81">限流</a>
+<ul>
+<li><a href="#1-%E5%9B%BA%E5%AE%9A%E7%AA%97%E5%8F%A3">1. 固定窗口</a></li>
+<li><a href="#2-%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3">2. 滑动窗口</a>
+<ul>
+<li><a href="#%E7%AE%97%E6%B3%95%E6%80%9D%E6%83%B3">算法思想</a></li>
+<li><a href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF">适用场景</a></li>
+</ul>
+</li>
+<li><a href="#go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0">Go语言实现</a></li>
+<li><a href="#3-%E6%BC%8F%E6%A1%B6">3. 漏桶</a>
+<ul>
+<li><a href="#%E7%AE%97%E6%B3%95%E6%80%9D%E6%83%B3-2">算法思想</a></li>
+<li><a href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-2">适用场景</a></li>
+</ul>
+</li>
+<li><a href="#go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0-2">Go语言实现</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E8%B0%83%E5%8C%85%E4%BD%BF%E7%94%A8">常见调包使用</a></li>
+<li><a href="#4-%E4%BB%A4%E7%89%8C%E6%A1%B6">4. 令牌桶</a>
+<ul>
+<li><a href="#%E7%AE%97%E6%B3%95%E6%80%9D%E6%83%B3-3">算法思想</a></li>
+<li><a href="#%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE">参数设置</a></li>
+<li><a href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-3">适用场景</a></li>
+</ul>
+</li>
+<li><a href="#go%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0-3">Go语言实现</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E8%B0%83%E5%8C%85%E4%BD%BF%E7%94%A8-2">常见调包使用</a></li>
+<li><a href="#5-%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81">5. 自适应限流</a></li>
+<li><a href="#sentinelalibaba">Sentinel（Alibaba）</a>
+<ul>
+<li><a href="#sentinel%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3">Sentinel使用文档</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84%E4%BE%8B%E5%AD%90sentinel-go-%E6%8E%A5%E5%85%A5-demo">一个简单的例子：Sentinel Go 接入 demo</a></li>
+<li><a href="#%E8%87%AA%E9%80%82%E5%BA%94%E6%B5%81%E6%8E%A7%E8%A7%84%E5%88%99">自适应流控规则</a></li>
+<li><a href="#%E8%87%AA%E9%80%82%E5%BA%94%E6%B5%81%E6%8E%A7%E7%A4%BA%E4%BE%8B">自适应流控示例</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://mzhtech.github.io/post/ye-wu-kai-fa-ri-chang-gong-zuo-de-fang-fa-lun/">
+              <h3 class="post-title">
+                业务开发日常工作的方法论
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://mzhtech.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

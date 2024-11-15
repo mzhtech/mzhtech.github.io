@@ -1,0 +1,606 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>服务稳定性建设方法论 | 今天学习了没</title>
+<link rel="shortcut icon" href="https://mzhtech.github.io/favicon.ico?v=1731655632816">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://mzhtech.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="服务稳定性建设方法论 | 今天学习了没 - Atom Feed" href="https://mzhtech.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="提升系统稳定性的方法
+本文主要从三个方面介绍提升系统稳定性的方法：故障预防、故障发现和故障恢复，主要包括以下内容：
+
+基础概念
+SLA, SLO, SLI
+SLI
+服务等级指标 (Service Level Indicator)
+提供服务的..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://mzhtech.github.io">
+  <img class="avatar" src="https://mzhtech.github.io/images/avatar.png?v=1731655632816" alt="">
+  </a>
+  <h1 class="site-title">
+    今天学习了没
+  </h1>
+  <p class="site-description">
+    希望每天都有收获
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              服务稳定性建设方法论
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-11-15
+              </span>
+              <span>
+                15 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h1 id="提升系统稳定性的方法">提升系统稳定性的方法</h1>
+<p>本文主要从三个方面介绍提升系统稳定性的方法：故障预防、故障发现和故障恢复，主要包括以下内容：<br>
+<img src="https://mzhtech.github.io/post-images/1731654965243.png" alt="" loading="lazy"></p>
+<h2 id="基础概念">基础概念</h2>
+<h3 id="sla-slo-sli">SLA, SLO, SLI</h3>
+<h4 id="sli">SLI</h4>
+<p><strong>服务等级指标 (Service Level Indicator)</strong><br>
+提供服务的指标，SLI 由每个部门自定义，没有统一的划分。<br>
+指标包括：测量指标的定义及具体计算方式、具体测量范围及方式<br>
+指标包括：</p>
+<ul>
+<li><strong>性能</strong>：响应时间、吞吐量、请求量</li>
+<li><strong>可用性</strong>：运行时间、故障时间/频率、响应时间、修复时间、修复率</li>
+<li><strong>可靠性</strong>：正确性、完整性</li>
+</ul>
+<h4 id="slo">SLO</h4>
+<p><strong>服务等级目标 (Service Level Objectives)</strong><br>
+服务所提供功能的一种期望状态。<br>
+SLO描述服务应该提供什么样功能。没有提到，如果目标达不到会怎样。<br>
+SLO 是用 SLI 来描述的，例如：</p>
+<ul>
+<li>每分钟平均 QPS &gt; 100k/s</li>
+<li>99% 访问延迟 &lt; 500ms</li>
+</ul>
+<h4 id="sla">SLA</h4>
+<p><strong>服务等级协议 (Service Level Agreement)</strong><br>
+SLA是一个涉及双方的合约，双方必须都要同意并遵守这个合约。<br>
+SLA用一个简单的公式来描述就是： SLA = SLO 后果。比如：达到响应时间SLO、未达到可用性SLO<br>
+对动作的具体实施，需要奖励/惩罚，比如：钱<br>
+例如：达到响应时间 SLO、未达到可用性 SLO。</p>
+<h3 id="年可用性计算">年可用性计算</h3>
+<p>1年 = 365天 = 8760小时</p>
+<ul>
+<li><strong>99.9%</strong> 可用性：
+<ul>
+<li><code>8760 * 0.1% = 8.76小时</code></li>
+</ul>
+</li>
+<li><strong>99.99%</strong> 可用性：
+<ul>
+<li><code>8760 * 0.0001 = 0.876小时 = 52.6分钟</code></li>
+</ul>
+</li>
+<li><strong>99.999%</strong> 可用性：
+<ul>
+<li><code>8760 * 0.00001 = 0.0876小时 = 5.26分钟</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="强弱依赖">强弱依赖</h3>
+<ul>
+<li><strong>强依赖</strong>：影响核心业务流程、系统可用性的依赖。</li>
+<li><strong>弱依赖</strong>：不影响核心业务流程、系统可用性的依赖。</li>
+</ul>
+<h3 id="并发数-吞吐量-响应时间">并发数、吞吐量、响应时间</h3>
+<ul>
+<li><strong>并发数</strong>：同一时刻处理的请求数，受限于 worker 数量、CPU、内存等。</li>
+<li><strong>响应时间</strong>：处理一个请求的响应时间。
+<ul>
+<li><code>avg</code>：平均响应时间</li>
+<li><code>pct99</code>：99%的请求响应时间</li>
+</ul>
+</li>
+<li><strong>吞吐量 (QPS)</strong>：每秒钟处理的请求数。</li>
+</ul>
+<h3 id="cpu-使用率-内存和-load">CPU 使用率、内存和 Load</h3>
+<ul>
+<li><strong>Load</strong>：负载平均，表示在过去1分钟、5分钟和15分钟内运行队列的平均长度。</li>
+<li><strong>CPU 使用率</strong>：表示 CPU 正在执行指令的时间比例。</li>
+<li><strong>内存使用率</strong>：系统中内存的使用情况。</li>
+</ul>
+<h4 id="load-与-cpu-使用率的关系">Load 与 CPU 使用率的关系</h4>
+<ul>
+<li>CPU 利用率关注的是 CPU 的忙碌程度，而负载关注的是系统中等待运行的工作量。</li>
+<li>高 CPU 利用率表示 CPU 正在积极工作，而低 CPU 利用率可能意味着 CPU 大部分时间处于空闲。</li>
+<li>高负载意味着有很多进程等待使用 CPU，可能导致系统响应变慢。</li>
+</ul>
+<h2 id="治理思路">治理思路</h2>
+<p>稳定性是一种面向风险设计，使系统具备控制风险、提供更高可用性的能力。<br>
+如果我们把风险记为 <code>r</code>，那么风险变成故障的概率则记为 <code>P(r)</code>。<br>
+故障影响面 = 故障影响范围 × 故障持续时间。<br>
+想要提升稳定性，需要从四个方面入手：</p>
+<ul>
+<li>减少风险的数量</li>
+<li>降低风险变故障的概率</li>
+<li>控制故障影响范围</li>
+<li>缩短故障影响时长<br>
+⾼可⽤问题的特点和⽊桶理论相似。 如果我们把链路看成⼀个桶， 把可⽤性看做桶的容量， 那么链路上的强依赖就是就是组成这个桶的⽊板，⼀张⽊板是短板， 就会降低整个桶的容量（可⽤性）。</li>
+</ul>
+<h2 id="治理方法">治理方法</h2>
+<h3 id="故障预防">故障预防</h3>
+<h4 id="链路梳理">链路梳理</h4>
+<p>链路梳理是发现风险的有效手段之一。常见的梳理方式有：</p>
+<ul>
+<li>
+<p><strong>工具梳理</strong>：</p>
+<ul>
+<li>自动采集，人工打标识别风险。</li>
+<li>优点：成本低；缺点：精度低，不直观。</li>
+</ul>
+</li>
+<li>
+<p><strong>人工梳理</strong>：</p>
+<ul>
+<li>人工梳理链路，识别风险。</li>
+<li>优点：精准直观，方便理解业务流程，快速发现风险；缺点：成本高。</li>
+</ul>
+</li>
+</ul>
+<p>实际中可以结合两种方式：先通过工具梳理链路，然后人工打标链路中的核心依赖。</p>
+<h4 id="依赖治理">依赖治理</h4>
+<ul>
+<li><strong>依赖是否合理</strong>：能否去掉这个依赖，或者多个依赖合并。</li>
+<li><strong>依赖强弱是否合理</strong>：结合业务特性评估。</li>
+<li><strong>依赖能否降级</strong>：
+<ul>
+<li><strong>弱依赖</strong>：兜底&amp;容错、重试&amp;补偿、预案降级能力。</li>
+<li><strong>强依赖</strong>：合理性分析、降级可行性分析。</li>
+</ul>
+</li>
+</ul>
+<h3 id="降级">降级</h3>
+<p>服务降级是在系统负载过高或某些服务无法使用时，临时关闭部分功能或降低服务标准的策略，以保障核心业务正常运作。</p>
+<h4 id="降级的方式">降级的方式</h4>
+<ul>
+<li><strong>延迟服务</strong>：例如，发表评论但延迟给用户增加积分，先将其放入缓存。</li>
+<li><strong>关闭服务</strong>：在粒度范围内关闭服务，例如双十一期间无法退款。</li>
+<li><strong>页面异步请求降级</strong>：如页面上有异步请求，响应慢时可跳转到降级页面。</li>
+<li><strong>写降级</strong>：如秒杀抢购，仅更新缓存，然后异步同步扣减库存到数据库。</li>
+<li><strong>读降级</strong>：如多级缓存模式，后端服务有问题时可降级为只读缓存。</li>
+</ul>
+<h3 id="降级的介入">降级的介入</h3>
+<h4 id="自动开关降级">自动开关降级</h4>
+<p>系统满足某些设定条件时，自动执行某些策略。常见的可作为自动降级条件的指标包括：</p>
+<ul>
+<li>
+<p><strong>服务超时</strong><br>
+当访问的服务响应缓慢且并非核心服务时，可在超时时自动降级。</p>
+</li>
+<li>
+<p><strong>失败次数</strong><br>
+例如，详情页中的库存信息，若某次查询请求失败，可以通过读取缓存数据等方式直接降级。<br>
+<strong>问题</strong>：虽然一次请求展示了缓存，但其他用户访问时仍会查询库存信息，可能已出现问题，上游系统仍不断发送请求。<br>
+<strong>解法</strong>：设定一个失败次数的阈值，一旦失败次数达到阈值，就对该查询接口进行降级，直至功能恢复。</p>
+</li>
+<li>
+<p><strong>发生故障</strong><br>
+依赖的服务完全瘫痪，或网络不通等情况可直接降级。</p>
+</li>
+<li>
+<p><strong>限流降级</strong><br>
+设定一个流量阈值，一旦流量达到阈值，就进行降级。例如，秒杀功能若瞬间流量过大，对于后续访问的用户直接提示已售空、跳转错误页，或让其输入验证码重试等。</p>
+</li>
+</ul>
+<h4 id="人工开关降级">人工开关降级</h4>
+<p>系统异常后，通过人工关闭服务等方式进行降级。</p>
+<ul>
+<li><strong>优点</strong>：比较灵活，能够依据异常情况灵活处理。</li>
+<li><strong>缺点</strong>：对人的要求较高，需要对系统有充分的了解，在系统异常时能够立刻进行处理。</li>
+</ul>
+<h3 id="超时配置">超时配置</h3>
+<p>所有下游依赖，包括中间件，使用时都严禁不主动配置超时时间，直接使用默认值。超时时间的配置思路如下：</p>
+<ol>
+<li><strong>整体接口对外承诺时间</strong>：拆解到这个模块有多少时间。</li>
+<li><strong>查服务和写服务</strong>：
+<ul>
+<li><strong>写服务</strong>：更应该关注返回结果，可以配置大一点，平时表现的1.5-2倍。</li>
+<li><strong>查服务</strong>：天然幂等，可以快速失败重试，超时时间稍微短一点，以预留出重试的时间。</li>
+</ul>
+</li>
+</ol>
+<h3 id="重试">重试</h3>
+<p>在分布式系统中，为了保证整体服务可用性和一致性，很多系统都会引入重试机制。</p>
+<ul>
+<li>
+<p><strong>优点</strong>：</p>
+<ul>
+<li>针对网络抖动或下游单实例故障的场景，重试效果很好。</li>
+</ul>
+</li>
+<li>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>下游系统因为请求量太大，导致 CPU 被打满，数据库连接池被占满。此时，上游系统的重试请求无疑是雪上加霜，给下游系统造成二次伤害。</li>
+<li>重试如果在调用链的每层都加上，若有小的抖动，就容易造成重试次数放大，进而引起雪崩。</li>
+</ul>
+</li>
+</ul>
+<p>因此，业务方需要结合实际场景，进行合理的重试和控制：</p>
+<ul>
+<li>有开关可以控制打开重试以及控制重试次数。</li>
+<li>请求失败超过一定次数可以开启熔断。</li>
+<li>加重试时需要和下游进行确认，确保其能承受并且是幂等的。</li>
+</ul>
+<h3 id="熔断">熔断</h3>
+<p><strong>服务雪崩</strong>：某个服务响应时间过长或完全没有响应，重复请求这个服务，将整个分布式系统拖垮。大多数服务雪崩都是由不断重试所导致的，这种重试可能是框架重试、代码重试或用户主动重试。</p>
+<p>在服务的依赖调用中，当被调用方出现故障时，出于自我保护的目的，调用方会主动停止调用，并根据业务需要进行相应处理。调用方这种主动停止调用的行为称为<strong>熔断</strong>。</p>
+<h3 id="隔离建设">隔离建设</h3>
+<h4 id="隔离方式">隔离方式</h4>
+<ol>
+<li>
+<p><strong>业务能力隔离</strong></p>
+<ul>
+<li><strong>读写应用拆分/CQRS</strong>：将同一块业务拆分为读和写两个应用。写操作偏向 B 端，读操作偏向 C 端，因而对两者的稳定性要求也不相同。</li>
+</ul>
+</li>
+<li>
+<p><strong>集群能力隔离</strong></p>
+<ul>
+<li>当业务流量和核对流量都调用同一个服务时，要求保证 CPU 保持在一定的水位。改造后，业务流量继续使用原集群，而 BCP 核对则调用 BCP 集群。业务分组按照高保要求保障，核对分组 CPU 水位可以放开到更高，从而提升稳定性的同时降低了成本。</li>
+</ul>
+</li>
+<li>
+<p><strong>数据库读写分离</strong></p>
+<ul>
+<li>将数据库的读操作和写操作分开，通常通过主从复制的方式实现。主数据库处理写请求，从数据库处理读请求，从而减轻主数据库的压力，提高整体系统的性能和可用性。</li>
+</ul>
+</li>
+</ol>
+<h3 id="限流治理">限流治理</h3>
+<p>限流要考虑两个方面：</p>
+<ul>
+<li><strong>入口限流</strong>：保护自己，防止突发流量击垮。</li>
+<li><strong>出口限流</strong>：保护下游，防止自己击垮下游服务。</li>
+<li></li>
+</ul>
+<h3 id="限流后的策略">限流后的策略</h3>
+<p>不管是为了保护自己还是保护下游，限流之后可以采取以下策略：</p>
+<ol>
+<li>
+<p><strong>直接抛错</strong></p>
+<ul>
+<li>这种方式的用户体验不够友好，但可以搭配重试策略使用。用户在遭遇错误时，可以通过重试机制尝试再次发送请求。</li>
+</ul>
+</li>
+<li>
+<p><strong>削峰，排队</strong></p>
+<ul>
+<li>这种方式相对友好，先受理请求再进行缓慢处理。以下是具体场景的示例：
+<ul>
+<li><strong>实时修改活动的使用门店</strong>：商家在修改活动时，调用实时修改接口。对于大型连锁店商家，一次修改可能涉及大量门店分组数据的 CRUD 操作。如果短时间内有多次这样的操作，会对数据库产生巨大的压力。在这种情况下，可以先受理请求，再进行处理。虽然会影响用户的使用方式（之前是同步反馈修改操作结果），但改造后可以改为异步通知用户修改结果。</li>
+<li><strong>合并更新请求</strong>：如果有 10 条增加积分的操作要执行，可以先计算出这十条操作一共要加多少积分，然后一次性加上去。通过批量执行的方式来降低请求量，减少对系统的压力。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>常见的限流算法：</p>
+<ul>
+<li><strong>漏桶</strong>：通过固定容量的漏桶控制请求处理速率。</li>
+<li><strong>令牌桶</strong>：通过定时器向桶中添加令牌，处理突发流量。</li>
+<li><strong>计数器</strong>：通过比较当前请求数与限流阈值判断是否限流。</li>
+<li><strong>滑动窗口限流</strong>：基于固定大小的时间窗口，允许在该时间窗口内的请求数不超过设定的阈值。</li>
+<li><strong>自适应限流</strong>：限流器结合服务器的Load、CPU、内存、接口的RT、QPS、并发线程数等指标，进行的一种自适应的流控策略。通过监控这些指标的变化，来动态的调整限流，来达到保证系统稳定性的目的。</li>
+</ul>
+<h3 id="单机限流与集群限流">单机限流与集群限流</h3>
+<h4 id="限流方式">限流方式</h4>
+<ol>
+<li>
+<p><strong>单机限流</strong></p>
+<ul>
+<li>针对单台服务器进行流量控制。即使集群级别有流量控制，单个实例依然可能因为本地请求过多而出现性能问题或崩溃。</li>
+</ul>
+</li>
+<li>
+<p><strong>集群限流</strong></p>
+<ul>
+<li>针对整个集群进行流量控制。整个服务集群可能面临全局的流量波动和峰值，因此需要集群级别的流量控制策略来确保整体系统的稳定性和可靠性。</li>
+</ul>
+</li>
+</ol>
+<h4 id="必要性">必要性</h4>
+<ul>
+<li>单机限流可以防止单台服务器因过载而崩溃，确保其性能稳定。</li>
+<li>集群限流能够应对全局流量波动，确保多个实例之间的负载均衡，提高系统的可靠性。</li>
+</ul>
+<h3 id="压测">压测</h3>
+<p>压测通过模拟用户请求，帮助发现系统瓶颈以及评估系统的整体水位。以下是进行压测的一般步骤：</p>
+<ol>
+<li><strong>确定测试目标</strong></li>
+<li><strong>制定压测计划</strong></li>
+<li><strong>创建环境并准备脚本</strong>：压测的环境需要和线上环境尽量保持一致。</li>
+<li><strong>执行压测</strong></li>
+<li><strong>监控系统性能</strong>：包括但不限于 RT、CPU 利用率、Load、内存情况、GC 次数、GC 时长、网络 IO 情况、堆内存情况、线上报警情况等。</li>
+<li><strong>分析结果</strong></li>
+<li><strong>优化和再测试</strong></li>
+</ol>
+<h3 id="全链路压测">全链路压测</h3>
+<p>单链路压测通常只关注自己的系统，可能忽略一些资源竞争及外部干扰，最终得到一个过于乐观的结果。在分布式场景中，只有在全链路压测中才能真正暴露出真实环境中的各种问题。</p>
+<ul>
+<li><strong>全链路压测</strong>可以从网络到 Nginx 反向代理、应用服务器、系统间依赖、数据库、缓存、磁盘等全方位找出系统瓶颈。</li>
+<li>需要能识别出压测流量，尤其是写操作产生的数据，需要做好数据隔离（如影子库、影子表）。</li>
+</ul>
+<h3 id="容灾">容灾</h3>
+<ul>
+<li><strong>同城容灾与异地容灾</strong>：容灾切流时支持同城和异地方式。</li>
+</ul>
+<h3 id="多活">多活</h3>
+<ol>
+<li>
+<p><strong>异地多活</strong></p>
+<ul>
+<li>让多个数据中心在不同地理位置提供相同的服务。</li>
+</ul>
+</li>
+<li>
+<p><strong>同城多活</strong></p>
+<ul>
+<li>在同一城市或地理区域内提供高可用性和容灾能力。</li>
+</ul>
+</li>
+</ol>
+<p>在异地多活和同城多活的架构中，每个数据中心均具备完整的应用程序及数据副本，能够同时提供服务并处理客户端请求。若一个数据中心出现故障，能够借助自动切换和故障转移机制将流量转移至其他正常的数据中心，以保障系统的可用性与可靠性。</p>
+<h3 id="故障演练">故障演练</h3>
+<ul>
+<li><strong>线上故障演练</strong>：例如代码注入报错。</li>
+<li><strong>机房故障演练</strong>：模拟机房故障情景，测试应急响应能力。</li>
+</ul>
+<h3 id="故障发现">故障发现</h3>
+<h4 id="大盘建设">大盘建设</h4>
+<p>线上出现问题时，大盘可以快速定位到问题方。建设大盘需要考虑以下三个因素：</p>
+<ul>
+<li><strong>范围</strong>：核心业务场景，包含核心入口、上游、自身、下游。</li>
+<li><strong>维度</strong>：机房、时间粒度。实时看板:故障发生时，秒级盘能及时观察业务流量的变化。T+1看板:观察指标在一段时间内的趋势变化</li>
+<li><strong>指标</strong>：业务核心指标 &amp; 服务状态指标(服务状态指标：总量、成功量、失败量、耗时、成功率、限流、错误码等)。</li>
+</ul>
+<h3 id="报警配置">报警配置</h3>
+<h4 id="报警降噪">报警降噪</h4>
+<ul>
+<li><strong>噪音管理</strong>：噪音会降低大家对报警的敏感度，导致忽略真正的问题报警。通过合理配置报警条件和阈值，减少无意义的报警，提高报警的有效性。</li>
+</ul>
+<h4 id="报警分级">报警分级</h4>
+<ul>
+<li><strong>告警分级</strong>：采用二八法则，将 80% 的注意力集中在 20% 的重要告警上。通过对报警进行分类，确保关键问题能够被及时关注和处理。</li>
+</ul>
+<h3 id="故障恢复">故障恢复</h3>
+<p>线上问题的第一要务是优先恢复服务。只有在无法找到明确的恢复方式时，才能将重心转移到根因定位上。此时，定位的目的仍然是为了找出恢复的手段。</p>
+<ul>
+<li><strong>主链路高可用</strong>：提升系统的健壮性，使其在出现问题时能够自愈恢复。</li>
+<li><strong>人工手段</strong>：当可用性问题超出自愈能力时，使用回滚、预案等人工手段来恢复服务。若相关应用有变更，优先考虑回滚操作。</li>
+</ul>
+<h4 id="常见恢复方式">常见恢复方式</h4>
+<ol>
+<li><strong>回滚</strong>：将系统恢复到上一个稳定版本，适用于有变更的情况。</li>
+<li><strong>预案执行</strong>：根据事先制定的应急预案进行处理，确保快速响应。</li>
+<li><strong>重启服务</strong>：在服务出现异常时，通过重启服务来恢复功能。</li>
+<li><strong>扩容</strong>：在流量激增或资源不足时，进行系统扩容以提高可用性。</li>
+<li><strong>故障转移</strong>：将流量切换到备份系统或其他可用实例，确保服务持续可用。</li>
+<li><strong>监控与报警</strong>：持续监控系统状态，并及时报警，确保问题能够被及时发现和处理。</li>
+</ol>
+<p>通过以上策略，可以有效地提高系统的可用性和恢复能力，确保在发生故障时能够快速响应和修复。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E6%8F%90%E5%8D%87%E7%B3%BB%E7%BB%9F%E7%A8%B3%E5%AE%9A%E6%80%A7%E7%9A%84%E6%96%B9%E6%B3%95">提升系统稳定性的方法</a>
+<ul>
+<li><a href="#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5">基础概念</a>
+<ul>
+<li><a href="#sla-slo-sli">SLA, SLO, SLI</a>
+<ul>
+<li><a href="#sli">SLI</a></li>
+<li><a href="#slo">SLO</a></li>
+<li><a href="#sla">SLA</a></li>
+</ul>
+</li>
+<li><a href="#%E5%B9%B4%E5%8F%AF%E7%94%A8%E6%80%A7%E8%AE%A1%E7%AE%97">年可用性计算</a></li>
+<li><a href="#%E5%BC%BA%E5%BC%B1%E4%BE%9D%E8%B5%96">强弱依赖</a></li>
+<li><a href="#%E5%B9%B6%E5%8F%91%E6%95%B0-%E5%90%9E%E5%90%90%E9%87%8F-%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4">并发数、吞吐量、响应时间</a></li>
+<li><a href="#cpu-%E4%BD%BF%E7%94%A8%E7%8E%87-%E5%86%85%E5%AD%98%E5%92%8C-load">CPU 使用率、内存和 Load</a>
+<ul>
+<li><a href="#load-%E4%B8%8E-cpu-%E4%BD%BF%E7%94%A8%E7%8E%87%E7%9A%84%E5%85%B3%E7%B3%BB">Load 与 CPU 使用率的关系</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E6%B2%BB%E7%90%86%E6%80%9D%E8%B7%AF">治理思路</a></li>
+<li><a href="#%E6%B2%BB%E7%90%86%E6%96%B9%E6%B3%95">治理方法</a>
+<ul>
+<li><a href="#%E6%95%85%E9%9A%9C%E9%A2%84%E9%98%B2">故障预防</a>
+<ul>
+<li><a href="#%E9%93%BE%E8%B7%AF%E6%A2%B3%E7%90%86">链路梳理</a></li>
+<li><a href="#%E4%BE%9D%E8%B5%96%E6%B2%BB%E7%90%86">依赖治理</a></li>
+</ul>
+</li>
+<li><a href="#%E9%99%8D%E7%BA%A7">降级</a>
+<ul>
+<li><a href="#%E9%99%8D%E7%BA%A7%E7%9A%84%E6%96%B9%E5%BC%8F">降级的方式</a></li>
+</ul>
+</li>
+<li><a href="#%E9%99%8D%E7%BA%A7%E7%9A%84%E4%BB%8B%E5%85%A5">降级的介入</a>
+<ul>
+<li><a href="#%E8%87%AA%E5%8A%A8%E5%BC%80%E5%85%B3%E9%99%8D%E7%BA%A7">自动开关降级</a></li>
+<li><a href="#%E4%BA%BA%E5%B7%A5%E5%BC%80%E5%85%B3%E9%99%8D%E7%BA%A7">人工开关降级</a></li>
+</ul>
+</li>
+<li><a href="#%E8%B6%85%E6%97%B6%E9%85%8D%E7%BD%AE">超时配置</a></li>
+<li><a href="#%E9%87%8D%E8%AF%95">重试</a></li>
+<li><a href="#%E7%86%94%E6%96%AD">熔断</a></li>
+<li><a href="#%E9%9A%94%E7%A6%BB%E5%BB%BA%E8%AE%BE">隔离建设</a>
+<ul>
+<li><a href="#%E9%9A%94%E7%A6%BB%E6%96%B9%E5%BC%8F">隔离方式</a></li>
+</ul>
+</li>
+<li><a href="#%E9%99%90%E6%B5%81%E6%B2%BB%E7%90%86">限流治理</a></li>
+<li><a href="#%E9%99%90%E6%B5%81%E5%90%8E%E7%9A%84%E7%AD%96%E7%95%A5">限流后的策略</a></li>
+<li><a href="#%E5%8D%95%E6%9C%BA%E9%99%90%E6%B5%81%E4%B8%8E%E9%9B%86%E7%BE%A4%E9%99%90%E6%B5%81">单机限流与集群限流</a>
+<ul>
+<li><a href="#%E9%99%90%E6%B5%81%E6%96%B9%E5%BC%8F">限流方式</a></li>
+<li><a href="#%E5%BF%85%E8%A6%81%E6%80%A7">必要性</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8E%8B%E6%B5%8B">压测</a></li>
+<li><a href="#%E5%85%A8%E9%93%BE%E8%B7%AF%E5%8E%8B%E6%B5%8B">全链路压测</a></li>
+<li><a href="#%E5%AE%B9%E7%81%BE">容灾</a></li>
+<li><a href="#%E5%A4%9A%E6%B4%BB">多活</a></li>
+<li><a href="#%E6%95%85%E9%9A%9C%E6%BC%94%E7%BB%83">故障演练</a></li>
+<li><a href="#%E6%95%85%E9%9A%9C%E5%8F%91%E7%8E%B0">故障发现</a>
+<ul>
+<li><a href="#%E5%A4%A7%E7%9B%98%E5%BB%BA%E8%AE%BE">大盘建设</a></li>
+</ul>
+</li>
+<li><a href="#%E6%8A%A5%E8%AD%A6%E9%85%8D%E7%BD%AE">报警配置</a>
+<ul>
+<li><a href="#%E6%8A%A5%E8%AD%A6%E9%99%8D%E5%99%AA">报警降噪</a></li>
+<li><a href="#%E6%8A%A5%E8%AD%A6%E5%88%86%E7%BA%A7">报警分级</a></li>
+</ul>
+</li>
+<li><a href="#%E6%95%85%E9%9A%9C%E6%81%A2%E5%A4%8D">故障恢复</a>
+<ul>
+<li><a href="#%E5%B8%B8%E8%A7%81%E6%81%A2%E5%A4%8D%E6%96%B9%E5%BC%8F">常见恢复方式</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://mzhtech.github.io/post/dou-yin-fen-ku-fen-biao-shi-jian/">
+              <h3 class="post-title">
+                抖音分库分表实践
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://mzhtech.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
